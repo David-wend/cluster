@@ -110,10 +110,12 @@ class InvertDic:
     def get_doc_dic(self):
         lines = tool.get_file_lines("./dict/doc.txt")
         for line in lines:
+
             temp = line.split("@@@@")
             info = temp[1].split("##", 3)
             self.doc_dic[int(temp[0])] = doc_proccess.Doc(info[0], info[3], info[1], datetime.strptime(
                 info[2], time_format), int(temp[0]))
+
 
     def get_word_df_dic(self):
         lines = tool.get_file_lines("./dict/word_df_dic.txt")
@@ -192,9 +194,6 @@ if __name__ == '__main__':
     self.get_word_index_dic()
     self.get_word_term_dic()
     doc_id = Doc.get_lasted_doc_id() + 1
-    new_doc = self.doc_dic[5]
-    new_doc.doc_id = 6
-    self.update_invert_index(new_doc)
     # 根据搜索结果返回文章编号
 
     # 保存更新好的词典

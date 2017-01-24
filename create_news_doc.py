@@ -5,13 +5,14 @@ import doc_proccess
 import tool
 import sql_tool
 
+
 def insert_doc(data):
     i = Inverted_index.InvertDic()
     doc_id = doc_proccess.Doc.get_lasted_doc_id() + 1
     for news in data:
         print news
         title = news[0].decode("UTF-8")
-        content = news[1].decode("UTF-8")
+        content = news[1].decode("UTF-8").split("\n")[0]
         datetime = news[2]
         news_type = news[3].decode("UTF-8")
         d = doc_proccess.Doc(title, content, news_type, datetime, doc_id)
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     news_type_list = ['军事', '体育', '科技', '娱乐', '社会', '国际', '国内', '数码']
     news_type = '数码'
     sql = "SELECT `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
-          " news_title like '%林丹%' ORDER BY `news_datetime` DESC LIMIT 0 , 100"
+          " news_title like '%出轨%' ORDER BY `news_datetime` DESC LIMIT 0 , 200"
     news_rows = sql_tool.select(sql)
     print len(news_rows)
     insert_doc(news_rows)
