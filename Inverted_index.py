@@ -3,7 +3,11 @@
 import doc_proccess
 import tool
 from doc_proccess import Doc
+
 __author__ = 'david'
+from datetime import datetime
+
+time_format = "%Y-%m-%d %H:%M:%S"
 
 
 class Term:
@@ -18,6 +22,7 @@ class Term:
 
 
     """
+
     def __init__(self, word_id, doc_id, tf):
         """
 
@@ -48,6 +53,7 @@ class InvertDic:
     """ 倒排索引词典
 
     """
+
     def __init__(self):
         """
 
@@ -105,7 +111,9 @@ class InvertDic:
         lines = tool.get_file_lines("./dict/doc.txt")
         for line in lines:
             temp = line.split("@@@@")
-            self.doc_dic[int(temp[0])] = temp[1]
+            info = temp[1].split("##", 3)
+            self.doc_dic[int(temp[0])] = doc_proccess.Doc(info[0], info[3], info[1], datetime.strptime(
+                info[2], time_format), int(temp[0]))
 
     def get_word_df_dic(self):
         lines = tool.get_file_lines("./dict/word_df_dic.txt")
@@ -166,15 +174,15 @@ class InvertDic:
                 n_set.add(word)
                 t = Term(self.word_index_dic[word], doc.doc_id, doc.freq_dic[word])
                 t.append_location(doc.location_dic[word])
-                self.word_term_dic[self.word_index_dic[word]] = self.word_term_dic.get(self.word_index_dic[word], []) + [t]
+                self.word_term_dic[self.word_index_dic[word]] = self.word_term_dic.get(self.word_index_dic[word],
+                                                                                       []) + [t]
 
         self.update_df_dic(doc.words)
-        self.doc_dic[doc.doc_id] = doc.doc_string
+        self.doc_dic[doc.doc_id] = doc
         tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
 
 
 if __name__ == '__main__':
-
     # 初始化词典
     self = InvertDic()
     self.get_doc_dic()
@@ -184,8 +192,9 @@ if __name__ == '__main__':
     self.get_word_index_dic()
     self.get_word_term_dic()
     doc_id = Doc.get_lasted_doc_id() + 1
-    print self.word_index_dic
-    print doc_id
+    new_doc = self.doc_dic[5]
+    new_doc.doc_id = 6
+    self.update_invert_index(new_doc)
     # 根据搜索结果返回文章编号
 
     # 保存更新好的词典

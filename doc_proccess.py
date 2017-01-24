@@ -1,12 +1,11 @@
 # coding=utf-8
-import re
-import tool
-import init_static
-import jieba.posseg as pseg
+
 
 __author__ = 'david'
 from datetime import datetime
-
+import re
+import tool
+import jieba.posseg as pseg
 time_format = "%Y-%m-%d %H:%M:%S"
 
 
@@ -118,25 +117,17 @@ class Doc:
         return filter_words
 
     def __str__(self):
-        # print self.time
-        # print type(self.time)
-        # print datetime.strftime(
-        #     self.time, time_format)
-        # print type(datetime.strftime(
-        #     self.time, time_format) )
+        # print type(str(self.doc_id))
+        # print type(self.doc_string)
+        # print type(self.doc_string.encode("utf8").decode("utf8"))
         return str(self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + datetime.strftime(
-            self.time, time_format)
+            self.time, time_format) + "##" + self.doc_string.encode("utf8")
 
 
 if __name__ == '__main__':
-    content = "在这一年中，中国的改革开放和现代化建设继续向前迈进。国民经济保持了“高增长、低通胀”" \
-              "的\n良好发展态势。农业生产再次获得好的收成，企业改革继续深化，人民生活进一步改善。对外" \
-              "经济技术合作与交流不断扩大"
+    content = u"在这一年中，中国的改革开放和现代化建设继续向前迈进。国民经济保持了“高增长、低通胀”" \
+              u"的\n良好发展态势。农业生产再次获得好的收成，企业改革继续深化，人民生活进一步改善。对外" \
+              u"经济技术合作与交流不断扩大"
 
-    d = Doc("一个新闻标题", content, "", datetime.now())
-    # print ' '.join(d.sentences[1])
-    print d.freq_dic
-    print d.location_dic
-    print ' '.join(d.words)
-    print Doc.get_lasted_doc_id()
+    d = Doc("一个新闻标题", content, "社会", datetime.now())
     print d.__str__()

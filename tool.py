@@ -96,7 +96,10 @@ def write_file(path, lines, flag):
     """
     f = open(path, flag)
     for line in lines:
-        f.write(line.encode('utf-8') + "\n")
+        try:
+            f.write(line.encode('utf-8') + "\n")
+        except UnicodeError:
+            f.write(line + "\n")
     f.flush()
     f.close()
     return True
