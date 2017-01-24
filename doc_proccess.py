@@ -30,7 +30,10 @@ class Doc:
             self.doc_string = doc_string
         self.title = title
         self.doc_id = doc_id
-        self.time = time
+        if time is None:
+            self.time = datetime.now()
+        else:
+            self.time = time
         self.news_type = news_type
         self.paragraphs = []
         self.sentences = []
