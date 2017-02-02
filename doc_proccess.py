@@ -1,6 +1,5 @@
 # coding=utf-8
 
-
 __author__ = 'david'
 from datetime import datetime
 import re
@@ -120,9 +119,6 @@ class Doc:
         return filter_words
 
     def __str__(self):
-        # print type(str(self.doc_id))
-        # print type(self.doc_string)
-        # print type(self.doc_string.encode("utf8").decode("utf8"))
         return str(self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + datetime.strftime(
             self.time, time_format) + "##" + self.doc_string.encode("utf8")
 

@@ -1,11 +1,10 @@
 # coding=utf-8
 
+__author__ = 'david'
+from datetime import datetime
 import doc_proccess
 import tool
 from doc_proccess import Doc
-
-__author__ = 'david'
-from datetime import datetime
 
 time_format = "%Y-%m-%d %H:%M:%S"
 
@@ -19,7 +18,6 @@ class Term:
     单词1   Term
     单词2             Term
     单词3                       Term
-
 
     """
 
@@ -49,6 +47,24 @@ class Term:
                + "##".join([str(x) for x in self.location_ids])
 
 
+class CombTerm(Term):
+    def __init__(self, word_id, doc_id, tf, term_len):
+        Term.__init__(self, word_id, doc_id, tf)
+        self.term_len = term_len
+        self.comb_words = []
+
+    def append_comb_words(self, word_ids):
+        self.comb_words += word_ids
+
+    def append_location(self, ids):
+        Term.append_location(self, ids)
+
+    def __str__(self):
+        return str(self.word_id) + "@@@@" + str(self.doc_id) + "@@@@" + str(self.tf) + "@@@@" + str(
+            self.term_len) + "@@@@" + "##".join([str(x) for x in self.location_ids]) + "@@@@" + "##".join(
+            [str(x) for x in self.comb_words])
+
+
 class InvertDic:
     """ 倒排索引词典
 
@@ -66,12 +82,14 @@ class InvertDic:
         :attribute doc_len: 整数，表示现有文档数量
         """
 
+        self.word_comb_term_dic = {}
         self.word_index_dic = {}
         self.word_freq_dic = {}
         self.word_term_dic = {}
         self.word_df_dic = {}
         self.doc_dic = {}
         self.doc_len = doc_proccess.Doc.get_lasted_doc_id() + 1
+        self.word_num = 0
         self.init_all_dic()
 
     def init_all_dic(self):
@@ -80,6 +98,14 @@ class InvertDic:
         self.get_word_freq_dic()
         self.get_word_index_dic()
         self.get_word_term_dic()
+        self.get_word_comb_term_dic()
+
+    def save_word_comb_term_dic(self):
+        lines = []
+        for it in self.word_comb_term_dic.items():
+            for t in it[1]:
+                lines.append(t.__str__())
+        tool.write_file("./dict/word_comb_term_dic.txt", lines, "w")
 
     def save_word_df_dic(self):
         lines = []
@@ -110,12 +136,10 @@ class InvertDic:
     def get_doc_dic(self):
         lines = tool.get_file_lines("./dict/doc.txt")
         for line in lines:
-
             temp = line.split("@@@@")
             info = temp[1].split("##", 3)
             self.doc_dic[int(temp[0])] = doc_proccess.Doc(info[0], info[3], info[1], datetime.strptime(
                 info[2], time_format), int(temp[0]))
-
 
     def get_word_df_dic(self):
         lines = tool.get_file_lines("./dict/word_df_dic.txt")
@@ -129,6 +153,7 @@ class InvertDic:
             temp = line.split("\t")
             try:
                 self.word_index_dic[temp[0].decode("utf-8")] = int(temp[1])
+                self.word_num += 1
             except:
                 print "error"
                 continue
@@ -146,6 +171,15 @@ class InvertDic:
             t = Term(int(temp[0]), int(temp[1]), int(temp[2]))
             t.append_location([int(x) for x in temp[3].split("##")])
             self.word_term_dic[int(temp[0])] = self.word_term_dic.get(int(temp[0]), []) + [t]
+
+    def get_word_comb_term_dic(self):
+        lines = tool.get_file_lines("./dict/word_comb_term_dic.txt")
+        for line in lines:
+            temp = line.split("@@@@")
+            t = CombTerm(int(temp[0]), int(temp[1]), int(temp[2]), int(temp[3]))
+            t.append_location([int(x) for x in temp[4].split("##")])
+            t.append_comb_words([int(x) for x in temp[5].split("##")])
+            self.word_comb_term_dic[int(temp[0])] = self.word_term_dic.get(int(temp[0]), []) + [t]
 
     def update_df_dic(self, words):
         """ 更新文档频率
@@ -178,26 +212,89 @@ class InvertDic:
                 t.append_location(doc.location_dic[word])
                 self.word_term_dic[self.word_index_dic[word]] = self.word_term_dic.get(self.word_index_dic[word],
                                                                                        []) + [t]
-
         self.update_df_dic(doc.words)
         self.doc_dic[doc.doc_id] = doc
         tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
+
+    def get_co_occurrence_info(self, set_i, dict_i, set_j, dict_j):
+        ids = []
+        locations = []
+        for k in set_i & set_j:
+            temp = []
+            list_i = sorted(dict_i[k].location_ids)
+            list_j = sorted(dict_j[k].location_ids)
+            if list_i[0] > list_j[-1]:
+                continue
+            for id_i in list_i:
+                for id_j in list_j:
+                    if id_i == id_j - 1:
+                        ids.append(k)
+                        temp.append(id_i)
+            if len(temp) > 0:
+                locations.append(temp)
+        return ids, locations
+
+    def add_new_term(self, word_i, word_j, is_comb_term=False):
+        if word_i + word_j in self.word_index_dic:
+            print "组合词已在词典"
+            return
+        if word_i not in self.word_index_dic or word_j not in self.word_index_dic:
+            print "待组合词不在词典"
+            return
+
+        word_i_set, word_i_dic = self.transform_term_info(word_i, is_comb_term)
+        word_j_set, word_j_dic = self.transform_term_info(word_j, is_comb_term)
+        doc_ids, doc_locations = self.get_co_occurrence_info(word_i_set, word_i_dic, word_j_set, word_j_dic)
+
+        if len(doc_ids) != len(doc_locations):
+            print "数组越位"
+            return
+
+        self.word_index_dic[word_i + word_j] = self.word_num
+        self.word_num += 1
+        self.word_df_dic[word_i + word_j] = len(doc_ids)
+        for i in range(len(doc_ids)):
+            self.word_freq_dic[word_i + word_j] = self.word_freq_dic.get(word_i + word_j, 0) + len(doc_locations[i])
+            t = CombTerm(self.word_index_dic[word_i + word_j], doc_ids[i], len(doc_locations[i]), 2)
+            t.append_location(doc_locations[i])
+            t.append_comb_words([self.word_index_dic[word_i], self.word_index_dic[word_j]])
+            self.word_comb_term_dic[self.word_index_dic[word_i + word_j]] = self.word_comb_term_dic.get(
+                self.word_index_dic[word_i + word_j],
+                []) + [t]
+
+    def transform_term_info(self, word, is_comb_term=False):
+        word_set = set([])
+        word_dict = {}
+        if not is_comb_term:
+            term_dic = self.word_term_dic
+        else:
+            term_dic = self.word_comb_term_dic
+        for i_term in term_dic[self.word_index_dic[word]]:
+            word_set.add(i_term.doc_id)
+            word_dict[i_term.doc_id] = i_term
+        return word_set, word_dict
+
+    def transform_term_to_comb_term(self):
+        for it in self.word_term_dic.items():
+            for t in it[1]:
+                ct = CombTerm(t.word_id, t.doc_id, t.tf, 1)
+                ct.append_location(t.location_ids)
+                ct.append_comb_words([t.word_id])
+                self.word_comb_term_dic[t.word_id] = self.word_comb_term_dic.get(t.word_id, []) + [ct]
 
 
 if __name__ == '__main__':
     # 初始化词典
     self = InvertDic()
-    self.get_doc_dic()
-
-    self.get_word_df_dic()
-    self.get_word_freq_dic()
-    self.get_word_index_dic()
-    self.get_word_term_dic()
-    doc_id = Doc.get_lasted_doc_id() + 1
-    # 根据搜索结果返回文章编号
-
+    # doc_id = Doc.get_lasted_doc_id() + 1
     # 保存更新好的词典
-    self.save_word_df_dic()
-    self.save_word_freq_dic()
-    self.save_word_index_dic()
-    self.save_word_term_dic()
+    # self.save_word_df_dic()
+    # self.save_word_freq_dic()
+    # self.save_word_index_dic()
+    # self.save_word_term_dic()
+    # print self.word_index_dic[u"林丹"]
+    # print self.word_index_dic[u"出轨"]
+    # self.add_new_term(u"林丹", u"出轨")
+    # print self.word_comb_term_dic[self.word_index_dic[u"林丹" + u"出轨"]]
+    self.transform_term_to_comb_term()
+    self.save_word_comb_term_dic()
