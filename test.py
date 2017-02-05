@@ -7,7 +7,6 @@
 # import jieba.posseg as pseg
 # for term in pseg.cut("洋葱新闻：女大学生深陷裸贷无底洞 借4000元还10万仍未还清"):
 #     print term.word
-
-a = False
-if not a:
-    print a
+a = [1,2]
+print a[-1]
+print a[-1:]
