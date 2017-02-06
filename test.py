@@ -4,7 +4,6 @@ import info_init
 import tool
 import numpy as np
 from jieba import posseg as pseg
-from datetime import datetime
 
 
 def count_similar(title_arr_list, title_arr_j):
@@ -55,39 +54,34 @@ def count_similar(title_arr_list, title_arr_j):
 
 
 lines = tool.get_file_lines("./dict/doc.txt")
-words_dic = {}
-ids = []
-time = []
-for line in lines:
-    arr = line.split("@@@@", 1)
-    brr = arr[1].split("##", 3)
-    words = [term.word for term in pseg.cut(brr[0])]
-    words_dic[int(arr[0])] = words
-    ids.append(int(arr[0]))
-    # time.append(brr[2])
-    time.append(datetime.strptime(brr[2], "%Y-%m-%d %H:%M:%S"))
-
-time = np.array(time)
-ids = np.array(ids)
-ids = ids[np.argsort(time)]
-time = np.sort(time)
+words = []
 filter_set = set([])
 
-flags = np.ones(len(ids))
-for i in range(len(ids) - 1):
+for i in range(len(lines)):
+    arr = lines[i].split("@@@@", 1)
+    brr = arr[1].split("##", 3)
+    words.append([term.word for term in pseg.cut(brr[0])])
+
+flags = np.ones(len(words))
+for i in range(len(words)):
     if flags[i]:
         flags[i] = 0
-        for j in range(i + 1, len(ids)):
+        for j in range(len(words)):
+            if i==j:
+                continue
             if flags[j]:
-                delta = time[i] - time[j]
-                if abs(delta.days) < 2:
-                    if count_similar([words_dic[ids[i]]], words_dic[ids[j]]):
-                        flags[j] = 0
-                        filter_set.add(j)
-                else:
-                    break
+                if count_similar([words[i]], words[j]):
+                    flags[j] = 0
+                    filter_set.add(j)
 
+temp = []
 result = []
-for i in set(ids) - filter_set:
-    result.append(lines[i-1])
+result_set = set(range(len(words))) - filter_set
+for i in result_set:
+    temp.append(lines[i].split("@@@@")[1].split("##")[0])
+    result.append(lines[i])
+
 tool.write_file("./dict/filter_doc.txt", result, "w")
+tool.write_file("./dict/filter_doc_title.txt",temp,"w")
+
+

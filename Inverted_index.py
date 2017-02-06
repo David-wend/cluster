@@ -74,7 +74,7 @@ class InvertDic:
         self.doc_dic = {}
         self.doc_len = doc_proccess.Doc.get_lasted_doc_id() + 1
         self.word_num = 0
-        # self.init_all_dic()
+        self.init_all_dic()
 
     def init_all_dic(self):
         self.get_doc_dic()
@@ -260,7 +260,7 @@ if __name__ == '__main__':
     result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
 
-    for k in range(4):
+    for k in range(6):
         result_dic = {}
         for i in range(len(candidate_list)):
             for j in range(len(candidate_list)):
@@ -268,7 +268,7 @@ if __name__ == '__main__':
                     continue
                 if i_dic.add_term_bound(candidate_list[i], candidate_list[j]):
                     ids, locations = i_dic.get_co_occurrence_info(candidate_list[i], candidate_list[j])
-                    if len(ids) > 6:
+                    if len(ids) > 3:
                         i_dic.add_new_term(candidate_list[i], candidate_list[j])
                         new_word = candidate_list[i] + i_dic.index_word_dic[i_dic.word_comb_word_dic[
                             i_dic.word_index_dic[candidate_list[j]]][-1]]
