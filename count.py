@@ -53,6 +53,6 @@ if __name__ == '__main__':
     lines = []
     for temp in result_list:
         lines.append(temp[0] + "##" + str(temp[1]))
-    tool.write_file("./dict/word_co.txt", lines, "w")
+    tool.write_file("./dict/word_co.txt", lines, "a")
 
 

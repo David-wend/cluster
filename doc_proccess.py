@@ -5,6 +5,7 @@ from datetime import datetime
 import re
 import tool
 import jieba.posseg as pseg
+
 time_format = "%Y-%m-%d %H:%M:%S"
 
 
@@ -119,8 +120,13 @@ class Doc:
         return filter_words
 
     def __str__(self):
-        return str(self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + datetime.strftime(
-            self.time, time_format) + "##" + self.doc_string.encode("utf8")
+        try:
+            return str(self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + datetime.strftime(
+                self.time, time_format) + "##" + self.doc_string.encode("utf8")
+        except TypeError:
+            return str(
+                self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + self.time + "##" + self.doc_string.encode(
+                "utf8")
 
 
 if __name__ == '__main__':

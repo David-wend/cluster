@@ -74,7 +74,7 @@ class InvertDic:
         self.doc_dic = {}
         self.doc_len = doc_proccess.Doc.get_lasted_doc_id() + 1
         self.word_num = 0
-        self.init_all_dic()
+        # self.init_all_dic()
 
     def init_all_dic(self):
         self.get_doc_dic()
@@ -93,7 +93,7 @@ class InvertDic:
         lines = []
         for it in self.word_index_dic.items():
             lines.append(it[0] + "@@@@" +
-                         str(it[1]) + "@@@@" + "##".join(self.word_comb_word_dic[it[1]]))
+                         str(it[1]) + "@@@@" + "##".join([str(x) for x in self.word_comb_word_dic[it[1]]]))
         tool.write_file("./dict/word_index_dic.txt", lines, "w")
 
     def save_word_freq_dic(self):
@@ -171,6 +171,7 @@ class InvertDic:
         for word in doc.words:
             if word not in self.word_index_dic:
                 self.word_index_dic[word] = word_id
+                self.word_comb_word_dic[word_id] = [word_id]
                 self.word_freq_dic[self.word_index_dic[word]] = 1
                 word_id += 1
             else:
@@ -183,7 +184,7 @@ class InvertDic:
                                                                                        []) + [t]
         self.update_df_dic(doc.words)
         self.doc_dic[doc.doc_id] = doc
-        tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
+        # tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
 
     def get_co_occurrence_info(self, word_i, word_j):
         set_i, dict_i = self.transform_term_info(word_i)
@@ -257,8 +258,9 @@ if __name__ == '__main__':
     candidate_list = i_dic.word_index_dic.keys()
     candidate_list = list(set(candidate_list) - tool.get_stop_word())
     result_dic = {}
+    tool.write_file("./dict/word_co.txt", [], "w")
 
-    for k in range(5):
+    for k in range(4):
         result_dic = {}
         for i in range(len(candidate_list)):
             for j in range(len(candidate_list)):
@@ -266,7 +268,7 @@ if __name__ == '__main__':
                     continue
                 if i_dic.add_term_bound(candidate_list[i], candidate_list[j]):
                     ids, locations = i_dic.get_co_occurrence_info(candidate_list[i], candidate_list[j])
-                    if len(ids) > 5:
+                    if len(ids) > 6:
                         i_dic.add_new_term(candidate_list[i], candidate_list[j])
                         new_word = candidate_list[i] + i_dic.index_word_dic[i_dic.word_comb_word_dic[
                             i_dic.word_index_dic[candidate_list[j]]][-1]]
@@ -278,7 +280,7 @@ if __name__ == '__main__':
             try:
                 lines.append(temp[0] + "##" + str(temp[1]) + "##" + str(
                     len(i_dic.word_comb_word_dic[i_dic.word_index_dic[temp[0]]])))
-            except:
+            except KeyError:
                 print temp[0]
                 continue
         tool.write_file("./dict/word_co.txt", lines, "a")

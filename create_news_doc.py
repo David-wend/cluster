@@ -9,7 +9,7 @@ import sql_tool
 def insert_doc(data):
     i = Inverted_index.InvertDic()
     # doc_id = doc_proccess.Doc.get_lasted_doc_id() + 1
-    doc_rows = tool.get_file_lines("./dict/doc.txt")
+    doc_rows = tool.get_file_lines("./dict/filter_doc.txt")
     for row in doc_rows:
         temp = row.split("@@@@", 1)
         news = temp[1].split("##", 3)
