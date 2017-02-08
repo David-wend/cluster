@@ -36,7 +36,7 @@ class Term:
     def append_location(self, ids):
         """ 添加单词在文档中出现的位置信息
 
-        :param ids:
+        :param ids: 包含位置信息的数组，eq.[位置下标]
         :return:
         """
         self.location_ids += ids
@@ -55,6 +55,7 @@ class InvertDic:
         """
 
         :attribute word_comb_word_dic: 词典，记录单词的组合形式，eq.{组合词编号:[单词1编号，单词2编号]}
+        :attribute index_word_dic: 词典，记录单词编号，eq.{单词编号:单词}
         :attribute word_index_dic: 词典，记录单词编号，eq.{单词:单词编号}
         :attribute word_freq_dic: 词典，记录单词总词频，eq.{单词编号:单词总词频}
         :attribute word_term_dic: 词典，存储倒排索引条目信息，eq.{单词编号:[Term1，Term2]}
@@ -184,13 +185,27 @@ class InvertDic:
                                                                                        []) + [t]
         self.update_df_dic(doc.words)
         self.doc_dic[doc.doc_id] = doc
-        # tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
+        tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
 
     def get_co_occurrence_info(self, word_i, word_j):
-        set_i, dict_i = self.transform_term_info(word_i)
-        set_j, dict_j = self.transform_term_info(word_j)
+        """ 获取两个词语的共现信息
+
+        :param word_i: 候选词1
+        :param word_j: 候选词2
+        :return: ids：[共现文档编号1,共现文档编号2]
+                  locations：[[共现文档1位置信息],[共现文档2位置信息]]
+        """
         ids = []
         locations = []
+        # word_k = word_i + self.index_word_dic[self.word_comb_word_dic[self.word_index_dic[word_j]][-1]]
+        # if word_k in self.word_index_dic:
+        #     for t in self.word_term_dic[self.word_index_dic[word_k]]:
+        #         ids.append(t.doc_id)
+        #         locations.append(t.location_ids)
+
+        set_i, dict_i = self.transform_term_info(word_i)
+        set_j, dict_j = self.transform_term_info(word_j)
+
         for k in set_i & set_j:
             temp = []
             list_i = sorted(dict_i[k].location_ids)
@@ -208,7 +223,14 @@ class InvertDic:
         return ids, locations
 
     def add_term_bound(self, word_i, word_j):
-        if word_i + word_j in self.word_index_dic:
+        """ 判断候选词是否满足条件
+
+        :param word_i: 候选词1
+        :param word_j: 候选词2
+        :return: boolean
+        """
+        word_k = word_i + self.index_word_dic[self.word_comb_word_dic[self.word_index_dic[word_j]][-1]]
+        if word_k in self.word_index_dic:
             # print "组合词已在词典"
             return False
         if word_i not in self.word_index_dic or word_j not in self.word_index_dic:
@@ -227,6 +249,12 @@ class InvertDic:
         return True
 
     def add_new_term(self, word_i, word_j):
+        """ 将候选词组合得到的新词添加进词典
+
+        :param word_i: 候选词1
+        :param word_j: 候选词2
+        :return:
+        """
         if self.add_term_bound(word_i, word_j):
             doc_ids, doc_locations = self.get_co_occurrence_info(word_i, word_j)
             word_k = word_i + self.index_word_dic[self.word_comb_word_dic[self.word_index_dic[word_j]][-1]]
@@ -244,23 +272,30 @@ class InvertDic:
             print "不满足规范"
 
     def transform_term_info(self, word):
+        """ 将单词倒排索引信息转换为集合和字典
+
+        :param word: 单词
+        :return: word_set：set([所在文档编号])
+                  word_dic: {所在文档编号：倒排索引条目}
+        """
         word_set = set([])
-        word_dict = {}
+        word_dic = {}
         for i_term in self.word_term_dic[self.word_index_dic[word]]:
             word_set.add(i_term.doc_id)
-            word_dict[i_term.doc_id] = i_term
-        return word_set, word_dict
+            word_dic[i_term.doc_id] = i_term
+        return word_set, word_dic
 
 
 if __name__ == '__main__':
     # 初始化词典
     i_dic = InvertDic()
+
     candidate_list = i_dic.word_index_dic.keys()
-    candidate_list = list(set(candidate_list) - tool.get_stop_word())
+
+    ids_dic = {}
     result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
-
-    for k in range(6):
+    for k in range(10):
         result_dic = {}
         for i in range(len(candidate_list)):
             for j in range(len(candidate_list)):
@@ -268,18 +303,20 @@ if __name__ == '__main__':
                     continue
                 if i_dic.add_term_bound(candidate_list[i], candidate_list[j]):
                     ids, locations = i_dic.get_co_occurrence_info(candidate_list[i], candidate_list[j])
-                    if len(ids) > 3:
+                    if len(ids) > 5:
                         i_dic.add_new_term(candidate_list[i], candidate_list[j])
                         new_word = candidate_list[i] + i_dic.index_word_dic[i_dic.word_comb_word_dic[
                             i_dic.word_index_dic[candidate_list[j]]][-1]]
                         result_dic[new_word] = len(ids)
+                        ids_dic[new_word] = ids
 
         result_list = sorted(result_dic.items(), key=lambda x: x[1])
         lines = []
         for temp in result_list:
             try:
-                lines.append(temp[0] + "##" + str(temp[1]) + "##" + str(
-                    len(i_dic.word_comb_word_dic[i_dic.word_index_dic[temp[0]]])))
+                lines.append(temp[0] + "@@" + str(temp[1]) + "@@" + str(
+                    len(i_dic.word_comb_word_dic[i_dic.word_index_dic[temp[0]]])) + "@@" + "##".join(
+                    [str(x) for x in ids_dic[temp[0]]]))
             except KeyError:
                 print temp[0]
                 continue

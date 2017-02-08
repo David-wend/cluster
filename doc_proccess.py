@@ -66,10 +66,13 @@ class Doc:
         :return:
         """
 
-        for term in pseg.cut(self.title):
-            self.words_without_f.append(term.word)
-            if term.flag != u"x":
-                self.words.append(term.word)
+        for word in self.title:
+            self.words_without_f.append(word)
+            # self.words.append(word)
+            for term in pseg.cut(word):
+                if term.flag != u"x":
+                    self.words.append(word)
+                break
 
     def split_word(self):
         """ 切分单词
@@ -125,8 +128,7 @@ class Doc:
                 self.time, time_format) + "##" + self.doc_string.encode("utf8")
         except TypeError:
             return str(
-                self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + self.time + "##" + self.doc_string.encode(
-                "utf8")
+                self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + self.time + "##" + self.doc_string
 
 
 if __name__ == '__main__':
