@@ -89,7 +89,3 @@ for term in terms:
     print term.flag
     if term.flag == u"x":
         print "y"
-
-lines = u"\"裸贷\""
-for word in lines:
-    print word,
