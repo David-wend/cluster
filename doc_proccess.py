@@ -28,7 +28,10 @@ class Doc:
             self.doc_string = doc_string.decode('utf8')
         else:
             self.doc_string = doc_string
-        self.title = title
+        if not isinstance(title, unicode):
+            self.title = title.decode('utf8')
+        else:
+            self.title = title
         self.doc_id = doc_id
         if time is None:
             self.time = datetime.now()

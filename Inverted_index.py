@@ -75,7 +75,7 @@ class InvertDic:
         self.doc_dic = {}
         self.doc_len = doc_proccess.Doc.get_lasted_doc_id() + 1
         self.word_num = 0
-        self.init_all_dic()
+        # self.init_all_dic()
 
     def init_all_dic(self):
         self.get_doc_dic()
@@ -197,12 +197,6 @@ class InvertDic:
         """
         ids = []
         locations = []
-        # word_k = word_i + self.index_word_dic[self.word_comb_word_dic[self.word_index_dic[word_j]][-1]]
-        # if word_k in self.word_index_dic:
-        #     for t in self.word_term_dic[self.word_index_dic[word_k]]:
-        #         ids.append(t.doc_id)
-        #         locations.append(t.location_ids)
-
         set_i, dict_i = self.transform_term_info(word_i)
         set_j, dict_j = self.transform_term_info(word_j)
 
