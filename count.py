@@ -70,5 +70,5 @@ def get_co_name():
 if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
-
+    #
     calculate_independence(i_dic, u"出")
