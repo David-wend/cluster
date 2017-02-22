@@ -46,6 +46,11 @@ if __name__ == '__main__':
 
     sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
           " news_datetime > '2016-1-01 00:00:00' and `news_datetime` < '2016-1-6 00:00:00'"
+
+    sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
+          " news_title like '%林丹%' or news_title like '%罗尔%' or news_title like '%裸贷%' or news_title like '%罗" \
+          "一笑%'"
+
     news_rows = sql_tool.select(sql)
     print len(news_rows)
     insert_doc_from_db(news_rows)
