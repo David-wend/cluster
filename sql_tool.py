@@ -32,3 +32,24 @@ def select(sql, t=None):
     cursor.close()
     conn.close()
     return row
+
+
+def save_many_into_mysql(conn, cursor, sql, temp):
+    """ 批量存入
+
+    :param conn:
+    :param cursor:
+    :param sql:
+    :param temp:
+    :return:
+    """
+    try:
+        cursor.executemany(sql, temp)
+        conn.commit()
+    except MySQLdb.Error, e:
+        print sql
+        try:
+            sql_error = "Error y%d:%s" % (e.args[0], e.args[1])
+            print sql_error
+        except IndexError:
+            print "MySQL Error:%s" % str(e)
