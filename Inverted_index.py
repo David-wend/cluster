@@ -209,6 +209,7 @@ class InvertDic:
             for id_i in list_i:
                 for id_j in list_j:
                     if id_i == id_j - 1:
+                    # if id_i < id_j :
                         if k not in ids:
                             ids.append(k)
                         temp.append(id_i)

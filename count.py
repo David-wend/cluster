@@ -3,6 +3,7 @@
 __author__ = 'david'
 import Inverted_index
 import tool
+import numpy as np
 
 
 def calculate_integrity(dictionary, word):
@@ -15,7 +16,7 @@ def calculate_stability(dictionary, word):
     word_freq = dictionary.word_freq_dic[dictionary.word_index_dic[word]]
     f_word_freq = dictionary.word_freq_dic.get(dictionary.word_index_dic.get(word[:-1], ""), 1)
     l_word_freq = dictionary.word_freq_dic.get(dictionary.word_index_dic.get(word[1:], ""), 1)
-    return float(word_freq) / (f_word_freq + l_word_freq - word_freq)
+    return float(word_freq) / (f_word_freq + l_word_freq - word_freq + 1)
 
 
 def calculate_independence_by_freq(dictionary, word):
@@ -61,7 +62,7 @@ def get_co_name():
                     continue
                 if i_dic.add_term_bound(candidate_list[i], candidate_list[j]):
                     ids, locations = i_dic.get_co_occurrence_info(candidate_list[i], candidate_list[j])
-                    if len(ids) > 2:
+                    if len(ids) > 3:
                         i_dic.add_new_term(candidate_list[i], candidate_list[j])
                         new_word = candidate_list[i] + i_dic.index_word_dic[i_dic.word_comb_word_dic[
                             i_dic.word_index_dic[candidate_list[j]]][-1]]
@@ -90,11 +91,38 @@ def get_co_name():
         candidate_list = result_dic.keys()
 
 
+def load_data():
+    path = "./dict/word_co.txt"
+    lines = tool.get_file_lines(path)
+    words = []
+    values = []
+    doc_ids = []
+    freq = []
+    for line in lines:
+        arr = line.split("@@")
+        words.append(arr[0])
+        freq.append(int(arr[1]))
+        brr = arr[4].split("##")
+        values.append([float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1])])
+        doc_ids.append(arr[6].split("##"))
+    return words, freq, values, doc_ids
+
+
 if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
+    # get_co_name()
 
-    get_co_name()
+    words, freq, values, doc_ids = load_data()
+    result = {}
+    candidate_remove = {}
+    candidate_temp = {}
 
-    calculate_independence(i_dic, u"出")
+    for i in range(len(words)):
+        # print freq[i], values[i]
+        if freq[i] > 2:
+            if values[i][0] > 0.6 and values[i][1] > 0.6 and values[i][2] > 0.49 \
+                    and values[i][3] > 0.49 and np.mean([values[i][2:]]) > 0.49:
+                print words[i], freq[i]
+                # candidate_temp
 
