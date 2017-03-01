@@ -91,21 +91,38 @@ def get_co_name():
         candidate_list = result_dic.keys()
 
 
+def var_dump_word_tree(word, words, freq, values, doc_ids, word_index_dic):
+    word_index = word_index_dic[word]
+    print words[word_index], freq[word_index], values[word_index][0], values[word_index][1], \
+        values[word_index][2], values[word_index][3]
+    if len(word) > 2:
+        return var_dump_word_tree(word[:-1], words, freq, values, doc_ids, word_index_dic), var_dump_word_tree(word[1:],
+                                                                                                               words,
+                                                                                                               freq,
+                                                                                                               values,
+                                                                                                               doc_ids,
+                                                                                                               word_index_dic)
+
+
 def load_data():
     path = "./dict/word_co.txt"
     lines = tool.get_file_lines(path)
     words = []
+    word_index_dic = {}
     values = []
     doc_ids = []
     freq = []
+    num = 0
     for line in lines:
         arr = line.split("@@")
-        words.append(arr[0])
+        words.append(arr[0].decode("utf8"))
+        word_index_dic[arr[0].decode("utf8")] = num
+        num += 1
         freq.append(int(arr[1]))
         brr = arr[4].split("##")
         values.append([float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1])])
         doc_ids.append(arr[6].split("##"))
-    return words, freq, values, doc_ids
+    return words, freq, values, doc_ids, word_index_dic
 
 
 if __name__ == '__main__':
@@ -113,16 +130,16 @@ if __name__ == '__main__':
     i_dic.init_all_dic()
     # get_co_name()
 
-    words, freq, values, doc_ids = load_data()
+    words, freq, values, doc_ids, word_index_dic = load_data()
     result = {}
     candidate_remove = {}
     candidate_temp = {}
 
     for i in range(len(words)):
-        # print freq[i], values[i]
         if freq[i] > 2:
             if values[i][0] > 0.6 and values[i][1] > 0.6 and values[i][2] > 0.49 \
                     and values[i][3] > 0.49 and np.mean([values[i][2:]]) > 0.49:
-                print words[i], freq[i]
+                var_dump_word_tree(words[i], words, freq, values, doc_ids, word_index_dic)
                 # candidate_temp
 
+                # var_dump_word_tree(u"李永波", words, freq, values, doc_ids, word_index_dic)
