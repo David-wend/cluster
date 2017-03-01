@@ -50,7 +50,7 @@ def get_co_name():
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     candidate_list = i_dic.word_index_dic.keys()
-
+    limit_dic = {1: 4, 2: 3, 3: 3, 4: 3, 5:2}
     ids_dic = {}
     # result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
@@ -62,7 +62,7 @@ def get_co_name():
                     continue
                 if i_dic.add_term_bound(candidate_list[i], candidate_list[j]):
                     ids, locations = i_dic.get_co_occurrence_info(candidate_list[i], candidate_list[j])
-                    if len(ids) > 3:
+                    if len(ids) > limit_dic.get(len(candidate_list[i]), 2):
                         i_dic.add_new_term(candidate_list[i], candidate_list[j])
                         new_word = candidate_list[i] + i_dic.index_word_dic[i_dic.word_comb_word_dic[
                             i_dic.word_index_dic[candidate_list[j]]][-1]]
@@ -96,12 +96,8 @@ def var_dump_word_tree(word, words, freq, values, doc_ids, word_index_dic):
     print words[word_index], freq[word_index], values[word_index][0], values[word_index][1], \
         values[word_index][2], values[word_index][3]
     if len(word) > 2:
-        return var_dump_word_tree(word[:-1], words, freq, values, doc_ids, word_index_dic), var_dump_word_tree(word[1:],
-                                                                                                               words,
-                                                                                                               freq,
-                                                                                                               values,
-                                                                                                               doc_ids,
-                                                                                                               word_index_dic)
+        return var_dump_word_tree(word[:-1], words, freq, values, doc_ids, word_index_dic), \
+               var_dump_word_tree(word[1:], words, freq, values, doc_ids, word_index_dic)
 
 
 def load_data():
@@ -128,18 +124,18 @@ def load_data():
 if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
-    # get_co_name()
+    get_co_name()
 
-    words, freq, values, doc_ids, word_index_dic = load_data()
-    result = {}
-    candidate_remove = {}
-    candidate_temp = {}
+    # words, freq, values, doc_ids, word_index_dic = load_data()
+    # result = {}
+    # candidate_remove = {}
+    # candidate_temp = {}
+    #
+    # for i in range(len(words)):
+    #     if freq[i] > 2:
+    #         if values[i][0] > 0.6 and values[i][1] > 0.6 and values[i][2] > 0.49 \
+    #                 and values[i][3] > 0.49 and np.mean([values[i][2:]]) > 0.49:
+    #             var_dump_word_tree(words[i], words, freq, values, doc_ids, word_index_dic)
+    # candidate_temp
 
-    for i in range(len(words)):
-        if freq[i] > 2:
-            if values[i][0] > 0.6 and values[i][1] > 0.6 and values[i][2] > 0.49 \
-                    and values[i][3] > 0.49 and np.mean([values[i][2:]]) > 0.49:
-                var_dump_word_tree(words[i], words, freq, values, doc_ids, word_index_dic)
-                # candidate_temp
-
-                # var_dump_word_tree(u"李永波", words, freq, values, doc_ids, word_index_dic)
+    # var_dump_word_tree(u"李永波", words, freq, values, doc_ids, word_index_dic)
