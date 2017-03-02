@@ -4,7 +4,8 @@ __author__ = 'david'
 import Inverted_index
 import tool
 import numpy as np
-
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
 
 def calculate_integrity(dictionary, word):
     word_freq = dictionary.word_freq_dic[dictionary.word_index_dic[word]]
@@ -50,7 +51,7 @@ def get_co_name():
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     candidate_list = i_dic.word_index_dic.keys()
-    limit_dic = {1: 4, 2: 3, 3: 3, 4: 3, 5:2}
+    limit_dic = {1: 4, 2: 3, 3: 3, 4: 3, 5: 2}
     ids_dic = {}
     # result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
@@ -121,21 +122,47 @@ def load_data():
     return words, freq, values, doc_ids, word_index_dic
 
 
+def calculate_total_weight(freq, values):
+    return freq * 0.1 + values[0] + values[1] + values[2] + values[3]
+
+
+def remove_non_sense_word():
+    result = {}
+    candidate_remove = {}
+    for i in range(len(words)):
+        if freq[i] > 2:
+            if values[i][0] > 0.6 and values[i][1] > 0.6 and values[i][2] > 0.49 \
+                    and values[i][3] > 0.49 and np.mean([values[i][2:]]) > 0.49:
+                # print words[i], calculate_total_weight(freq[i], values[i])
+                result[words[i]] = calculate_total_weight(freq[i], values[i])
+                if words[i][:-1] in result:
+                    candidate_remove[words[i][:-1]] = result[words[i][:-1]]
+                    # if result[words[i][:-1]] < 4:
+                    del result[words[i][:-1]]
+                if words[i][1:] in result:
+                    candidate_remove[words[i][1:]] = result[words[i][1:]]
+                    # if result[words[i][1:]] < 4:
+                    del result[words[i][1:]]
+    result_list = sorted(result.items(), key=lambda x: x[1])  # 排序比较keys
+    return result_list
+
+
 if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
-    get_co_name()
+    # get_co_name()
 
-    # words, freq, values, doc_ids, word_index_dic = load_data()
-    # result = {}
-    # candidate_remove = {}
-    # candidate_temp = {}
-    #
+    words, freq, values, doc_ids, word_index_dic = load_data()
+    result_list = remove_non_sense_word()
+    # print "==" * 10
+    # for i in result_list:
+    #     print i[0], i[1]
+
+    # result = []
     # for i in range(len(words)):
-    #     if freq[i] > 2:
-    #         if values[i][0] > 0.6 and values[i][1] > 0.6 and values[i][2] > 0.49 \
-    #                 and values[i][3] > 0.49 and np.mean([values[i][2:]]) > 0.49:
-    #             var_dump_word_tree(words[i], words, freq, values, doc_ids, word_index_dic)
-    # candidate_temp
+    #     result.append(words[i] + "," + str(freq[i]) + "," + ",".join([str(x) for x in values[i]]) + "," + str(0))
+    # tool.write_file("./dict/word_weight.txt", result ,"w")
 
-    # var_dump_word_tree(u"李永波", words, freq, values, doc_ids, word_index_dic)
+    word_weights = pd.read_csv("./dict/word_weight.txt", header = None, sep=",")
+    print word_weights
+    lr_model = LogisticRegression(C =1.0, penalty='l2')
