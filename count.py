@@ -147,6 +147,33 @@ def remove_non_sense_word():
     return result_list
 
 
+def split_data_set(data, label, num, flag0=0, flag1=0):
+    data = np.matrix(data)
+    train_X = data[:num]
+    train_Y = label['label'][:num]
+    if flag0 == 1:
+        train_X_1 = train_X[np.where(train_Y == 1)]
+        train_X_1 = train_X_1.repeat(2, axis=0)
+        train_X_0 = train_X[np.where(train_Y == 0)]
+        train_X_0 = train_X_0[:train_X_1.shape[0]]
+        train_X = np.concatenate((train_X_0, train_X_1))
+        train_Y = np.concatenate(
+            (np.zeros(train_X_1.shape[0], dtype=np.int), np.ones(train_X_1.shape[0], dtype=np.int)))
+
+    test_X = data[num:]
+    test_Y = label['label'][num:]
+    if flag1 == 1:
+        test_X_1 = test_X[np.where(test_Y == 1)]
+        test_X_1 = test_X_1.repeat(2, axis=0)
+        test_X_0 = test_X[np.where(test_Y == 0)]
+        test_X_0 = test_X_0[:test_X_1.shape[0]]
+        test_X = np.concatenate((test_X_0, test_X_1))
+        test_Y = np.concatenate(
+            (np.zeros(test_X_0.shape[0], dtype=np.int), np.ones(test_X_1.shape[0], dtype=np.int)))
+    print len(train_X), len(train_Y), len(test_X), len(test_Y)
+    return train_X, train_Y, test_X, test_Y
+
+
 if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
