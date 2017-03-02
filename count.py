@@ -166,3 +166,5 @@ if __name__ == '__main__':
     word_weights = pd.read_csv("./dict/word_weight.txt", header = None, sep=",")
     print word_weights
     lr_model = LogisticRegression(C =1.0, penalty='l2')
+
+    # test
