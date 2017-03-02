@@ -4,9 +4,7 @@ import Inverted_index
 import tool
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
 from sklearn import cross_validation
 from IPython.display import Image, display
@@ -244,7 +242,7 @@ def load_data():
         freq.append(int(arr[1]))
         brr = arr[4].split("##")
         values.append([float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1])])
-        doc_ids.append(arr[6].split("##"))
+        doc_ids.append([int(x) for x in arr[6].split("##")])
     return words, freq, values, doc_ids, word_index_dic
 
 
@@ -312,13 +310,20 @@ def train_clf():
     dt_clf = tree.DecisionTreeClassifier(max_depth=5)
     dt_clf.fit(word_weights, label)
     pre_y = dt_clf.predict(word_weights)
-    print classification_report(label, pre_y)
+    # print classification_report(label, pre_y)
     return words_pd[pre_y == 1].index
 
 
-def calculate_sim(word_i, word_j):
-    pass
+def calculate_sim(word_i_doc_ids, word_j_doc_ids):
+    word_i_set = set(word_i_doc_ids)
+    word_j_set = set(word_j_doc_ids)
+    return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
 
+
+def calculate_sim_by_cut():
+    word_i_set = set(word_i_doc_ids)
+    word_j_set = set(word_j_doc_ids)
+    return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
 
 def get_word_distribution(word):
     pass
@@ -328,20 +333,25 @@ if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     # get_co_name()
-
     words, freq, values, doc_ids, word_index_dic = load_data()
-    # result_list = remove_non_sense_word(words, freq, values)
-    # print "==" * 10
-    # for i in result_list:
-    #     print i[0], i[1]
 
+    word_set = set([])
+    word_remove_set = set([])
     word_index = train_clf()
-    # jieba.add_word("裸贷", freq = 30)
     for w in word_index:
-        print words[w],
-        # if len(words[w])>3:
-        for i in jieba.cut(words[w]):
-            print i,
-        print
+        word_set.add(words[w])
+        word_remove_set.add(words[w][:-1])
+        word_remove_set.add(words[w][1:])
 
-    remove_duplicate.count_similar()
+    word_cut_array = []
+    for word in word_set - word_remove_set:
+        print word
+        word_cut_array.append([x for x in jieba.cut(word)])
+
+    for i in range(len(word_cut_array) - 1):
+        for j in range(i + 1, len(word_cut_array)):
+            if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
+                print "".join(word_cut_array[i]), "".join(word_cut_array[j])
+            print "".join(word_cut_array[i]), "".join(word_cut_array[j]), calculate_sim(
+                doc_ids[word_index_dic["".join(word_cut_array[i])]],
+                doc_ids[word_index_dic["".join(word_cut_array[j])]])
