@@ -6,6 +6,12 @@ import tool
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import tree
+from sklearn import cross_validation
+from IPython.display import Image
+
 
 def calculate_integrity(dictionary, word):
     word_freq = dictionary.word_freq_dic[dictionary.word_index_dic[word]]
@@ -126,7 +132,7 @@ def calculate_total_weight(freq, values):
     return freq * 0.1 + values[0] + values[1] + values[2] + values[3]
 
 
-def remove_non_sense_word():
+def remove_non_sense_word(words, freq, values):
     result = {}
     candidate_remove = {}
     for i in range(len(words)):
@@ -150,7 +156,7 @@ def remove_non_sense_word():
 def split_data_set(data, label, num, flag0=0, flag1=0):
     data = np.matrix(data)
     train_X = data[:num]
-    train_Y = label['label'][:num]
+    train_Y = label[:num]
     if flag0 == 1:
         train_X_1 = train_X[np.where(train_Y == 1)]
         train_X_1 = train_X_1.repeat(2, axis=0)
@@ -161,7 +167,7 @@ def split_data_set(data, label, num, flag0=0, flag1=0):
             (np.zeros(train_X_1.shape[0], dtype=np.int), np.ones(train_X_1.shape[0], dtype=np.int)))
 
     test_X = data[num:]
-    test_Y = label['label'][num:]
+    test_Y = label[num:]
     if flag1 == 1:
         test_X_1 = test_X[np.where(test_Y == 1)]
         test_X_1 = test_X_1.repeat(2, axis=0)
@@ -175,12 +181,12 @@ def split_data_set(data, label, num, flag0=0, flag1=0):
 
 
 if __name__ == '__main__':
-    i_dic = Inverted_index.InvertDic()
-    i_dic.init_all_dic()
+    # i_dic = Inverted_index.InvertDic()
+    # i_dic.init_all_dic()
     # get_co_name()
 
-    words, freq, values, doc_ids, word_index_dic = load_data()
-    result_list = remove_non_sense_word()
+    # words, freq, values, doc_ids, word_index_dic = load_data()
+    # result_list = remove_non_sense_word(words, freq, values)
     # print "==" * 10
     # for i in result_list:
     #     print i[0], i[1]
@@ -190,8 +196,39 @@ if __name__ == '__main__':
     #     result.append(words[i] + "," + str(freq[i]) + "," + ",".join([str(x) for x in values[i]]) + "," + str(0))
     # tool.write_file("./dict/word_weight.txt", result ,"w")
 
-    word_weights = pd.read_csv("./dict/word_weight.txt", header = None, sep=",")
-    print word_weights
-    lr_model = LogisticRegression(C =1.0, penalty='l2')
+    word_weights = pd.read_csv("./dict/word_weight.txt", header=None, sep=",")
+    col_names = ["word_name", "freq", "integrity", "stability",
+                 "independence_l", "independence_r", "label"]
+    word_weights.columns = col_names
+    label = word_weights["label"]
+    words = word_weights["word_name"]
+    word_weights.drop("label", axis=1, inplace=True)
+    word_weights.drop("word_name", axis=1, inplace=True)
 
-    # 
+    train_x, train_y, test_x, test_y = split_data_set(word_weights, label, 100, flag0=0, flag1=0)
+    lr_model = LogisticRegression(C=1.0, penalty='l2')
+    lr_model.fit(word_weights, label)
+    pre_y = lr_model.predict(word_weights)
+    print classification_report(label, pre_y)
+    print lr_model.coef_
+    print lr_model.intercept_
+
+    rt_clf = RandomForestClassifier(n_estimators=5)
+    rt_clf.fit(word_weights, label)
+    pre_y = rt_clf.predict(word_weights)
+    print classification_report(label, pre_y)
+
+    dt_clf = tree.DecisionTreeClassifier()
+    dt_clf.fit(word_weights, label)
+    pre_y = dt_clf.predict(word_weights)
+    print classification_report(label, pre_y)
+    dot_data = tree.export_graphviz(dt_clf, out_file=None, feature_names=word_weights.columns, class_names="",
+                                    filled=True, rounded=True, special_characters=True)
+
+
+    scores = cross_validation.cross_val_score(lr_model, word_weights, label, cv=5)
+    print scores.mean()
+    scores = cross_validation.cross_val_score(rt_clf, word_weights, label, cv=5)
+    print scores.mean()
+    scores = cross_validation.cross_val_score(dt_clf, word_weights, label, cv=5)
+    print scores.mean()
