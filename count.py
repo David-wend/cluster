@@ -1,6 +1,5 @@
 # coding=utf-8
 
-__author__ = 'david'
 import Inverted_index
 import tool
 import numpy as np
@@ -10,7 +9,11 @@ from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
 from sklearn import cross_validation
-from IPython.display import Image
+from IPython.display import Image, display
+import pydotplus
+import matplotlib.pyplot as plt
+
+__author__ = 'david'
 
 
 def calculate_integrity(dictionary, word):
@@ -218,13 +221,18 @@ if __name__ == '__main__':
     pre_y = rt_clf.predict(word_weights)
     print classification_report(label, pre_y)
 
-    dt_clf = tree.DecisionTreeClassifier()
+    dt_clf = tree.DecisionTreeClassifier(max_depth=5)
     dt_clf.fit(word_weights, label)
     pre_y = dt_clf.predict(word_weights)
     print classification_report(label, pre_y)
-    dot_data = tree.export_graphviz(dt_clf, out_file=None, feature_names=word_weights.columns, class_names="",
-                                    filled=True, rounded=True, special_characters=True)
+    print words[pre_y == 1]
 
+    # dot_data = tree.export_graphviz(dt_clf, out_file=None, feature_names=word_weights.columns, class_names="index",
+    #                                 filled=True, rounded=True, special_characters=True)
+    # graph = pydotplus.graph_from_dot_data(dot_data)
+    # img = Image(graph.create_png())
+    # display(img)
+    # graph.write_pdf("data.pdf")
 
     scores = cross_validation.cross_val_score(lr_model, word_weights, label, cv=5)
     print scores.mean()
