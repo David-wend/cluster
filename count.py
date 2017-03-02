@@ -167,4 +167,4 @@ if __name__ == '__main__':
     print word_weights
     lr_model = LogisticRegression(C =1.0, penalty='l2')
 
-    # test
+    # 
