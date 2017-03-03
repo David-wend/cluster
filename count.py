@@ -6,14 +6,27 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import classification_report
 from sklearn import tree
-from sklearn import cross_validation
-from IPython.display import Image, display
-import matplotlib.pyplot as plt
 from pandas import DataFrame
 import jieba
 import remove_duplicate
+from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn import preprocessing
 
 __author__ = 'david'
+
+
+class FeatureCluster:
+    def __init__(self, feature_cut):
+        self.feature_cut_array = []
+        self.append_new_feature_cut(feature_cut)
+
+    def append_new_feature_cut(self, feature_cut):
+        self.feature_cut_array.append(feature_cut)
+
+    def __str__(self):
+        return "@@".join(["".join(y) for y in self.feature_cut_array])
 
 
 def get_main_class(array, num_set):
@@ -29,9 +42,11 @@ def get_main_class(array, num_set):
         pre：主类所占比重
         right_num：主类数目
     '''
-    calculate_array = np.array([0] * (array.max() + 1))
+    # calculate_array = np.array([0] * (np.max(array) + 1))
+    calculate_array = np.zeros(shape=int(np.max(array)) + 1)
     series = pd.value_counts(array)  # 获得各个元素的计数表
     for i in series.index:
+        i = int(i)
         if i not in num_set:
             calculate_array[i] = series[i]
     right_num = calculate_array.max()
@@ -320,38 +335,123 @@ def calculate_sim(word_i_doc_ids, word_j_doc_ids):
     return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
 
 
-def calculate_sim_by_cut():
-    word_i_set = set(word_i_doc_ids)
-    word_j_set = set(word_j_doc_ids)
+def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_array):
+    word_i_set = set([])
+    word_j_set = set([])
+    for i in word_i_cut_array:
+        if i in word_index_dic:
+            word_i_set = word_i_set | set(doc_ids[word_index_dic[i]])
+    for j in word_j_cut_array:
+        if j in word_index_dic:
+            word_j_set = word_j_set | set(doc_ids[word_index_dic[j]])
+    # return float(len(word_i_set & word_j_set)) / (min_len * np.sqrt(max_len)), float(
+    #     len(word_i_set & word_j_set)) / min(len(word_i_set), len(word_j_set)), float(
+    #     len(word_i_set & word_j_set)) / (np.sqrt(min_len) * np.sqrt(max_len))
     return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
+
 
 def get_word_distribution(word):
     pass
 
 
 if __name__ == '__main__':
+
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     # get_co_name()
     words, freq, values, doc_ids, word_index_dic = load_data()
 
-    word_set = set([])
-    word_remove_set = set([])
-    word_index = train_clf()
-    for w in word_index:
-        word_set.add(words[w])
-        word_remove_set.add(words[w][:-1])
-        word_remove_set.add(words[w][1:])
+    # word_set = set([])
+    # word_remove_set = set([])
+    # word_index = train_clf()
+    # for w in word_index:
+    #     word_set.add(words[w])
+    #     word_remove_set.add(words[w][:-1])
+    #     word_remove_set.add(words[w][1:])
+    #
+    # word_cut_array = []
+    # for word in word_set - word_remove_set:
+    #     print word
+    #     if len(word) > 3:
+    #         word_cut_array.append([x for x in jieba.cut(word)])
+    #     else:
+    #         word_cut_array.append([word])
+
+    words_pd = pd.read_csv('./dict/word_info.txt', header=None, sep=',')
+    col_names = ["word_name", "freq", "in", "st", "ind_l", "ind_r", "label"]
+    words_pd.columns = col_names
+    label = words_pd["label"]
+    word_name = words_pd["word_name"]
 
     word_cut_array = []
-    for word in word_set - word_remove_set:
-        print word
-        word_cut_array.append([x for x in jieba.cut(word)])
+    for word in word_name:
+        # print word
+        if len(word) > 2:
+            word_cut_array.append([x for x in jieba.cut(word)])
+        else:
+            word_cut_array.append([word])
 
-    for i in range(len(word_cut_array) - 1):
-        for j in range(i + 1, len(word_cut_array)):
-            if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
-                print "".join(word_cut_array[i]), "".join(word_cut_array[j])
-            print "".join(word_cut_array[i]), "".join(word_cut_array[j]), calculate_sim(
-                doc_ids[word_index_dic["".join(word_cut_array[i])]],
-                doc_ids[word_index_dic["".join(word_cut_array[j])]])
+    # distance = np.zeros(shape=(len(word_cut_array), len(word_cut_array)))
+    # for i in range(len(word_cut_array)):
+    #     for j in range(len(word_cut_array)):
+    #         if i == j:
+    #             continue
+    #         if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
+    #             print "".join(word_cut_array[i]), "".join(word_cut_array[j])
+    #         distance[i][j] = calculate_sim_by_cut(word_index_dic, doc_ids,
+    #                                               word_cut_array[i],
+    #                                               word_cut_array[j])
+    #         print "".join(word_cut_array[i]), "".join(word_cut_array[j]), distance[i][j]
+    #
+    # print "=="*10
+    # min_max_scaler = preprocessing.MinMaxScaler()
+    # distance = min_max_scaler.fit_transform(distance)
+    # print distance
+
+    # db_model = DBSCAN(eps=0.5, min_samples=2, metric='precomputed', algorithm='auto', leaf_size=30, p=None,
+    #                   n_jobs=1).fit(distance)
+    # print db_model.labels_
+
+    # kmeans_model = KMeans(n_clusters=3, random_state=0).fit(distance)
+    # label_t = [int(x) for x in label]
+    # label_p = [int(x) for x in kmeans_model.labels_]
+    # print metrics.adjusted_rand_score(label, kmeans_model.labels_)
+    # print get_pre(label_t, label_p)
+
+    feature_array = []
+    feature_tag = np.zeros(shape=len(word_cut_array))
+    distance = np.zeros(shape=(len(word_cut_array), len(word_cut_array)))
+    for i in range(len(word_cut_array)-1):
+        if feature_tag[i] == 0:
+            feature_tag[i] = 1
+            fc = FeatureCluster(word_cut_array[i])
+            feature_array.append(fc)
+            for j in range(i+1, len(word_cut_array)):
+                if i ==j:
+                    continue
+                if feature_tag[j] == 0:
+                    if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
+                        pass
+                        # print "".join(word_cut_array[i]), "".join(word_cut_array[j])
+                    num = 0
+                    for word_cut_array_k in fc.feature_cut_array:
+                        similar = calculate_sim_by_cut(word_index_dic, doc_ids,
+                                                       word_cut_array_k,
+                                                       word_cut_array[j])
+                        print "".join(word_cut_array_k), "".join(word_cut_array[j]), similar
+                        if similar > 0.7:
+                            feature_tag[j] = 1
+                            fc.append_new_feature_cut(word_cut_array[j])
+                            break
+
+                        if similar > 0.12:
+                            num += 1
+                            if float(num) / len(fc.feature_cut_array) > 0.2:
+                                fc.append_new_feature_cut(word_cut_array[j])
+                                feature_tag[j] = 1
+                                break
+
+    for fc in feature_array:
+        print fc
+
+
