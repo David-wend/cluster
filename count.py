@@ -339,8 +339,24 @@ if __name__ == '__main__':
                 doc_word_dic[doc_id] = doc_word_dic.get(doc_id, []) + [word_name]
 
     # 计算事件下每一个话题簇熵重叠度，越小越纯粹
+    entropy_dic = {}
     for fc in feature_array:
         for feature_cut_array_k in fc.feature_cut_array:
             word_name = "".join(feature_cut_array_k)
-            print word_name, calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
+            entropy_dic[word_name] = calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
+            # print word_name, calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
 
+    # 根据FTC算法对文档进行映射
+    entropy_list = sorted(entropy_dic.items(), key=lambda x: x[1])
+    news_relative = {}
+    for i in entropy_list:
+        news_relative[i[0]] = doc_ids[word_index_dic[i[0]]]
+        for doc_id in doc_ids[word_index_dic[i[0]]]:
+            for word_name in doc_word_dic[doc_id]:
+                if word_name != i[0]:
+                    doc_ids[word_index_dic[word_name]].remove(doc_id)
+            if doc_id in doc_word_dic:
+                del doc_word_dic[doc_id]
+    
+    for item in news_relative.items():
+        print item[0], item[1]
