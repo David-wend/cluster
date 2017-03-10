@@ -327,6 +327,8 @@ if __name__ == '__main__':
                         if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j]):
                             # print "".join(fc.feature_cut_array[i]), "".join(fc.feature_cut_array[j])
                             tag[j] = 1
+
+        # 这里记得要对去重的话题的新闻分布进行合并
         fc.feature_cut_array = new_feature_cut_array
         print fc
 
@@ -357,6 +359,26 @@ if __name__ == '__main__':
                     doc_ids[word_index_dic[word_name]].remove(doc_id)
             if doc_id in doc_word_dic:
                 del doc_word_dic[doc_id]
-    
+
+    doc_dic = {}
+    for line in tool.get_file_lines("./dict/filter_doc.txt"):
+        arr = line.split("@@@@")
+        brr = arr[1].split("##")
+        doc_dic[int(arr[0])] = brr[0]
+
+    temp = []
     for item in news_relative.items():
         print item[0], item[1]
+        for doc_id in item[1]:
+            print "\t" + doc_dic[doc_id]
+            temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id))
+    tool.write_file("./dict/topic_news_relative.txt", temp, "w")
+
+    temp = []
+    num = 2
+    for fc in feature_array[:3]:
+        for feature_cut_array_k in fc.feature_cut_array:
+            word_name = "".join(feature_cut_array_k)
+            temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
+        num += 1
+    tool.write_file("./dict/event_topic_relative.txt", temp, "w")
