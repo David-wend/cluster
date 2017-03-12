@@ -4,16 +4,11 @@ import Inverted_index
 import tool
 import numpy as np
 import pandas as pd
-from sklearn.metrics import classification_report
 from sklearn import tree
-from pandas import DataFrame
 import jieba
 import remove_duplicate
-from sklearn.cluster import KMeans
-from sklearn.cluster import DBSCAN
-from sklearn import metrics
-from sklearn import preprocessing
 import math
+
 
 __author__ = 'david'
 
@@ -129,43 +124,44 @@ def load_data():
     lines = tool.get_file_lines(path)
     words = []
     word_index_dic = {}
-    values = []
-    doc_ids = []
-    freq = []
+    values = {}
+    doc_ids = {}
+    freq = {}
     num = 0
     for line in lines:
         arr = line.split("@@")
-        words.append(arr[0].decode("utf8"))
-        word_index_dic[arr[0].decode("utf8")] = num
+        word = arr[0].decode("utf8")
+        words.append(word)
+        word_index_dic[word] = num
         num += 1
-        freq.append(int(arr[1]))
+        freq[word] = int(arr[1])
         brr = arr[4].split("##")
-        values.append([float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1])])
-        doc_ids.append([int(x) for x in arr[6].split("##")])
+        values[word] = [float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1])]
+        doc_ids[word] = [int(x) for x in arr[6].split("##")]
     return words, freq, values, doc_ids, word_index_dic
 
 
 def calculate_total_weight(freq, values):
-    return freq * 0.1 + values[0] + values[1] + values[2] + values[3]
+    return freq * 0.5 + values[0] + values[1] + values[2] + values[3]
 
 
 def remove_non_sense_word(words, freq, values):
     result = {}
-    candidate_remove = {}
-    for i in range(len(words)):
-        if freq[i] > 2:
-            if values[i][0] > 0.7 and values[i][1] > 0.52 and values[i][2] > 0.6:
+    # candidate_remove = {}
+    for w_i in words:
+        if freq[w_i] > 2:
+            if values[w_i][0] > 0.7 and values[w_i][1] > 0.52 and values[w_i][2] > 0.6:
                 # print words[i], calculate_total_weight(freq[i], values[i])
-                result[words[i]] = calculate_total_weight(freq[i], values[i])
-                if words[i][:-1] in result:
-                    candidate_remove[words[i][:-1]] = result[words[i][:-1]]
-                    # if result[words[i][:-1]] < 4:
-                    # del result[words[i][:-1]]
-                if words[i][1:] in result:
-                    candidate_remove[words[i][1:]] = result[words[i][1:]]
-                    # if result[words[i][1:]] < 4:
-                    # del result[words[i][1:]]
-    result_list = sorted(result.items(), key=lambda x: x[1])  # 排序比较keys
+                result[w_i] = calculate_total_weight(freq[w_i], values[w_i])
+                # if w_i[:-1] in result:
+                #     # candidate_remove[words[i][:-1]] = result[words[i][:-1]]
+                #     if w_i[:-1] in result and result[w_i[:-1]] < 5 and values[w_i][0] > 0.8:
+                #         del result[w_i[:-1]]
+                # if w_i[1:] in result:
+                #     # candidate_remove[words[i][1:]] = result[words[i][1:]]
+                #     if w_i[1:] in result and result[w_i[1:]] < 5 and values[w_i][0] > 0.8:
+                #         del result[w_i[1:]]
+    result_list = sorted(result.keys(), key=lambda x: x[1], reverse=False)  # 排序比较keys
     return result_list
 
 
@@ -224,10 +220,14 @@ def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_a
     word_j_set = set([])
     for i in word_i_cut_array:
         if i in word_index_dic:
-            word_i_set = word_i_set | set(doc_ids[word_index_dic[i]])
+            if i == u"事件":
+                continue
+            word_i_set = word_i_set | set(doc_ids[i])
     for j in word_j_cut_array:
         if j in word_index_dic:
-            word_j_set = word_j_set | set(doc_ids[word_index_dic[j]])
+            if j == u"事件":
+                continue
+            word_j_set = word_j_set | set(doc_ids[j])
     # return float(len(word_i_set & word_j_set)) / (min_len * np.sqrt(max_len)), float(
     #     len(word_i_set & word_j_set)) / min(len(word_i_set), len(word_j_set)), float(
     #     len(word_i_set & word_j_set)) / (np.sqrt(min_len) * np.sqrt(max_len))
@@ -249,23 +249,28 @@ if __name__ == '__main__':
     # get_co_name()
     words, freq, values, doc_ids, word_index_dic = load_data()
 
-    words_pd = pd.read_csv('./dict/word_info.txt', header=None, sep=',')
-    col_names = ["word_name", "freq", "in", "st", "ind_l", "ind_r", "label"]
-    words_pd.columns = col_names
-    label = words_pd["label"]
-    word_name = words_pd["word_name"]
+    # print remove_duplicate.count_similar([[x for x in jieba.cut("出轨事件")]], [x for x in jieba.cut("出轨对象")], 0.5)
+
+    # 读取已经标注的词语
+    # words_pd = pd.read_csv('./dict/word_info.txt', header=None, sep=',')
+    # col_names = ["word_name", "freq", "in", "st", "ind_l", "ind_r", "label"]
+    # words_pd.columns = col_names
+    # label = words_pd["label"]
+    # word_name = words_pd["word_name"]
+    word_name = remove_non_sense_word(words, freq, values)
 
     # 根据层次结构去重，在聚类之后做比较好
-    word_set = set([])
-    word_remove_set = set([])
-    for w in word_name:
-        word_set.add(w)
-        word_remove_set.add(w[:-1])
-        word_remove_set.add(w[1:])
-    filter_word_name = word_set - word_remove_set
+    # word_set = set([])
+    # word_remove_set = set([])
+    # for w in word_name:
+    #     word_set.add(w)
+    #     word_remove_set.add(w[:-1])
+    #     word_remove_set.add(w[1:])
+    # filter_word_name = word_set - word_remove_set
 
     # 分词
     word_cut_array = []
+    # for word in words:
     for word in word_name:
         # print word
         if len(word) > 2:
@@ -291,7 +296,7 @@ if __name__ == '__main__':
                 if i == j:
                     continue
                 if feature_tag[j] == 0:
-                    if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
+                    if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j], 1):
                         pass
                         # print "".join(word_cut_array[i]), "".join(word_cut_array[j])
                     num = 0
@@ -312,8 +317,8 @@ if __name__ == '__main__':
                                 feature_tag[j] = 1
                                 break
 
-    # 语义去重
     for fc in feature_array:
+        # 语义去重
         new_feature_cut_array = []
         tag = np.zeros(shape=len(fc.feature_cut_array))
         for i in range(len(fc.feature_cut_array)):
@@ -324,12 +329,29 @@ if __name__ == '__main__':
                     if i == j:
                         continue
                     if tag[j] == 0:
-                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j]):
+                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.4):
                             # print "".join(fc.feature_cut_array[i]), "".join(fc.feature_cut_array[j])
                             tag[j] = 1
 
         # 这里记得要对去重的话题的新闻分布进行合并
         fc.feature_cut_array = new_feature_cut_array
+
+        # 上下级别位置去重
+        fc_words = sorted(["".join(x) for x in fc.feature_cut_array], key=lambda x:len(x), reverse=False)
+        result = {}
+        for word in fc_words:
+            similar_w = calculate_total_weight(freq[word], values[word])
+            result[word] = similar_w
+            if word[:-1] in result:
+                if word[:-1] in result and values[word[1:]][0] > 0.8:
+                    del result[word[:-1]]
+            if word[1:] in result:
+                if word[1:] in result and values[word[1:]][0] > 0.8:
+                    del result[word[1:]]
+
+        for i in result.keys():
+            print i,
+        print
         print fc
 
     # 将特征文档空间模型转换为文档特征空间模型
@@ -337,7 +359,7 @@ if __name__ == '__main__':
     for fc in feature_array:
         for feature_cut_array_k in fc.feature_cut_array:
             word_name = "".join(feature_cut_array_k)
-            for doc_id in doc_ids[word_index_dic[word_name]]:
+            for doc_id in doc_ids[word_name]:
                 doc_word_dic[doc_id] = doc_word_dic.get(doc_id, []) + [word_name]
 
     # 计算事件下每一个话题簇熵重叠度，越小越纯粹
@@ -345,18 +367,18 @@ if __name__ == '__main__':
     for fc in feature_array:
         for feature_cut_array_k in fc.feature_cut_array:
             word_name = "".join(feature_cut_array_k)
-            entropy_dic[word_name] = calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
+            entropy_dic[word_name] = calculate_entropy(doc_ids[word_name], doc_word_dic)
             # print word_name, calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
 
     # 根据FTC算法对文档进行映射
     entropy_list = sorted(entropy_dic.items(), key=lambda x: x[1])
     news_relative = {}
     for i in entropy_list:
-        news_relative[i[0]] = doc_ids[word_index_dic[i[0]]]
-        for doc_id in doc_ids[word_index_dic[i[0]]]:
+        news_relative[i[0]] = doc_ids[i[0]]
+        for doc_id in doc_ids[i[0]]:
             for word_name in doc_word_dic[doc_id]:
                 if word_name != i[0]:
-                    doc_ids[word_index_dic[word_name]].remove(doc_id)
+                    doc_ids[word_name].remove(doc_id)
             if doc_id in doc_word_dic:
                 del doc_word_dic[doc_id]
 

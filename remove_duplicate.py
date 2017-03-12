@@ -7,7 +7,8 @@ from jieba import posseg as pseg
 import create_news_doc
 import count
 
-def count_similar(title_arr_list, title_arr_j):
+
+def count_similar(title_arr_list, title_arr_j, limit_info):
     """ 利用相同关键词与最大公共子串长度计算事件与新闻的相似度
 
     对事件新闻列表中的每个新闻news_i:
@@ -37,11 +38,11 @@ def count_similar(title_arr_list, title_arr_j):
             similarity += info_init.termdir.get(word, 1)
             if word in info_init.flagdir:
                 similarity += info_init.speechdir.get(info_init.flagdir[word], 1)
-        if similar_word_num > 3:
+        if similar_word_num > 2:
             news_lcs = tool.lcs("".join(title_arr_i), "".join(title_arr_j))  # 最大相同子串
             similarity *= (1 + len(news_lcs) / max(len(title_arr_i), len(title_arr_j)))
-        limit = info_init.similarity_limit + max(len(title_arr_i), len(title_arr_j)) / 5
-
+        limit = limit_info + float(min(len(title_arr_i), len(title_arr_j))) / 5
+        # print similarity, limit
         if similarity > limit:
             # print similarity, limit
             # print ".".join(title_arr_i) + "@@@@" + ".".join(title_arr_j)
@@ -76,7 +77,7 @@ def remove_duplicate():
                 if i==j:
                     continue
                 if flags[j]:
-                    if count_similar([words[i]], words[j]):
+                    if count_similar([words[i]], words[j], 3):
                         flags[j] = 0
                         filter_set.add(j)
 
@@ -90,8 +91,10 @@ def remove_duplicate():
     tool.write_file("./dict/filter_doc.txt", result, "w")
     tool.write_file("./dict/filter_doc_title.txt",temp,"w")
 
-remove_duplicate()
-create_news_doc.transform_doc()
-count.get_co_name()
+
+if __name__ == '__main__':
+    remove_duplicate()
+    create_news_doc.transform_doc()
+    # count.get_co_name()
 
 
