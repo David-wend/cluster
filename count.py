@@ -6,129 +6,28 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import classification_report
 from sklearn import tree
-from sklearn import cross_validation
-from IPython.display import Image, display
-import matplotlib.pyplot as plt
 from pandas import DataFrame
 import jieba
 import remove_duplicate
+from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn import preprocessing
+import math
 
 __author__ = 'david'
 
 
-def get_main_class(array, num_set):
-    '''获取数组中的主类并计算类个数所占的比重
+class FeatureCluster:
+    def __init__(self, feature_cut):
+        self.feature_cut_array = []
+        self.append_new_feature_cut(feature_cut)
 
-    主类需要满足，该类未被映射，该类新闻在数组中占的比例最大
+    def append_new_feature_cut(self, feature_cut):
+        self.feature_cut_array.append(feature_cut)
 
-    :param
-        array：正确聚类结果中某个类在预测聚类结果中的映射
-        num_set：已经被映射的聚类标号的集合
-    :return
-        tag：主类标号
-        pre：主类所占比重
-        right_num：主类数目
-    '''
-    calculate_array = np.array([0] * (array.max() + 1))
-    series = pd.value_counts(array)  # 获得各个元素的计数表
-    for i in series.index:
-        if i not in num_set:
-            calculate_array[i] = series[i]
-    right_num = calculate_array.max()
-    pre = float(right_num) / len(array)
-    tag = calculate_array.argmax()
-    while tag in num_set:
-        tag += 1
-    return tag, pre, right_num
-
-
-def get_pre(true_result, forecast_result):
-    '''计算聚类结果的准确性
-
-    将正确结果与聚类结果进行映射，将分错点标记为-2
-    准确率计算公式：正确聚类的个数/样本总数
-
-    :param
-        true_result: 聚类正确结果数组
-        forecast_result: 聚类预测结果数组
-    :return
-        pre：准确率
-        forecast_result: 已将错误结果标记为-2的聚类预测结果数组
-    '''
-
-    true_result = np.array(true_result, dtype=float)
-    forecast_result = np.array(forecast_result, dtype=float)
-    temp_true_result = np.array(true_result)
-    temp_forecast_result = np.array(forecast_result)
-    last_pre = 0
-    num_set = set()
-
-    correspond_array = DataFrame([], index=['true_value', 'cluser_value', 'pre', 'right_num', 'len'])
-    for i in range(len(np.unique(true_result))):
-        temp_correspond_array = DataFrame(get_cluser_tag(temp_true_result, temp_forecast_result, num_set),
-                                          columns=['true_value', 'cluser_value', 'pre', 'right_num', 'len'])
-        temp_correspond_array = temp_correspond_array.sort_values(by=['right_num'], ascending=False)
-        temp_tag_num = temp_correspond_array.index[0]
-        num_set.add(temp_correspond_array['cluser_value'][temp_tag_num])
-        num = temp_correspond_array['true_value'][temp_tag_num]
-        boolean = temp_true_result != num
-        temp_true_result = temp_true_result[boolean]
-        temp_forecast_result = temp_forecast_result[boolean]
-        correspond_array[i] = temp_correspond_array.ix[temp_tag_num]
-    correspond_array = correspond_array.T
-
-    for i in range(len(correspond_array.index)):
-        pre = correspond_array['pre'][i]
-        main_class_num = correspond_array['true_value'][i]
-        lenth = correspond_array['len'][i]
-        last_pre += pre * lenth
-        cluser_value = correspond_array['cluser_value'][i]
-        arr = np.array(boolean_calculate(true_result == main_class_num, forecast_result != cluser_value, 'and'))
-        forecast_result[arr] += true_result[arr] / 100  # 将分错的点的类标记记为-2
-        arr = np.array(boolean_calculate(true_result == main_class_num, forecast_result == cluser_value, 'and'))
-        forecast_result[arr] = i  # 将分对的点与原来正确结果的类标号对应
-    return last_pre / len(true_result), forecast_result
-
-
-def get_cluser_tag(cluser_array, forecast_result, num_set):
-    '''对正确结果与聚类结果进行映射
-
-    :param
-        cluser_array：正确聚类结果数组
-        forecast_result：预测聚类结果数组
-        num_set：已被映射聚类标号的集合
-    :return
-        correspond_array：DataFrame对象，column=['原始类号','对应类号','准确率','正确聚类个数','类总数']
-    '''
-    correspond_array = []
-    for i in np.unique(cluser_array):
-        temp_forecast_result = forecast_result[cluser_array == i]
-        main_class_num, pre, right_num = get_main_class(temp_forecast_result, num_set)
-        correspond_array.append([i, main_class_num, pre, right_num, len(temp_forecast_result)])
-    return correspond_array
-
-
-def boolean_calculate(arr1, arr2, calculate):  # 对两个数组进行布尔运算
-    '''对两个数组的每一项进行布尔运算
-
-    :param
-        arr1：第一个数组
-        arr2：第二个数组
-        calculate：运算方式，可选['not','and','or']
-    :return
-        result：布尔运算结果
-    '''
-    result = [True] * len(arr1)
-    if calculate == 'and':
-        for i in range(len(arr1)):
-            result[i] = arr1[i] and arr2[i]
-    if calculate == 'or':
-        for i in range(len(arr1)):
-            result[i] = arr1[i] or arr2[i]
-    if calculate == 'not':
-        for i in range(len(arr1)):
-            result[i] = not arr1[i]
-    return result
+    def __str__(self):
+        return "@@".join(["".join(y) for y in self.feature_cut_array])
 
 
 def calculate_integrity(dictionary, word):
@@ -320,38 +219,166 @@ def calculate_sim(word_i_doc_ids, word_j_doc_ids):
     return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
 
 
-def calculate_sim_by_cut():
-    word_i_set = set(word_i_doc_ids)
-    word_j_set = set(word_j_doc_ids)
+def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_array):
+    word_i_set = set([])
+    word_j_set = set([])
+    for i in word_i_cut_array:
+        if i in word_index_dic:
+            word_i_set = word_i_set | set(doc_ids[word_index_dic[i]])
+    for j in word_j_cut_array:
+        if j in word_index_dic:
+            word_j_set = word_j_set | set(doc_ids[word_index_dic[j]])
+    # return float(len(word_i_set & word_j_set)) / (min_len * np.sqrt(max_len)), float(
+    #     len(word_i_set & word_j_set)) / min(len(word_i_set), len(word_j_set)), float(
+    #     len(word_i_set & word_j_set)) / (np.sqrt(min_len) * np.sqrt(max_len))
     return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
 
-def get_word_distribution(word):
-    pass
+
+def calculate_entropy(doc_ids, doc_word_dic):
+    entropy_value = 0
+    for doc_id in doc_ids:
+        entropy_value += -float(1) / len(doc_word_dic[doc_id]) * math.log10(
+            float(1) / len(doc_word_dic[doc_id]))
+    return entropy_value
 
 
 if __name__ == '__main__':
+
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     # get_co_name()
     words, freq, values, doc_ids, word_index_dic = load_data()
 
+    words_pd = pd.read_csv('./dict/word_info.txt', header=None, sep=',')
+    col_names = ["word_name", "freq", "in", "st", "ind_l", "ind_r", "label"]
+    words_pd.columns = col_names
+    label = words_pd["label"]
+    word_name = words_pd["word_name"]
+
+    # 根据层次结构去重，在聚类之后做比较好
     word_set = set([])
     word_remove_set = set([])
-    word_index = train_clf()
-    for w in word_index:
-        word_set.add(words[w])
-        word_remove_set.add(words[w][:-1])
-        word_remove_set.add(words[w][1:])
+    for w in word_name:
+        word_set.add(w)
+        word_remove_set.add(w[:-1])
+        word_remove_set.add(w[1:])
+    filter_word_name = word_set - word_remove_set
 
+    # 分词
     word_cut_array = []
-    for word in word_set - word_remove_set:
-        print word
-        word_cut_array.append([x for x in jieba.cut(word)])
+    for word in word_name:
+        # print word
+        if len(word) > 2:
+            word_cut_array.append([x for x in jieba.cut(word)])
+        else:
+            word_cut_array.append([word])
 
+    # 归一化，聚类效果评价
+    # min_max_scaler = preprocessing.MinMaxScaler()
+    # distance = min_max_scaler.fit_transform([])
+    # print metrics.adjusted_rand_score(label, label)
+
+    # 一趟聚类
+    feature_array = []
+    feature_tag = np.zeros(shape=len(word_cut_array))
+    distance = np.zeros(shape=(len(word_cut_array), len(word_cut_array)))
     for i in range(len(word_cut_array) - 1):
-        for j in range(i + 1, len(word_cut_array)):
-            if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
-                print "".join(word_cut_array[i]), "".join(word_cut_array[j])
-            print "".join(word_cut_array[i]), "".join(word_cut_array[j]), calculate_sim(
-                doc_ids[word_index_dic["".join(word_cut_array[i])]],
-                doc_ids[word_index_dic["".join(word_cut_array[j])]])
+        if feature_tag[i] == 0:
+            feature_tag[i] = 1
+            fc = FeatureCluster(word_cut_array[i])
+            feature_array.append(fc)
+            for j in range(i + 1, len(word_cut_array)):
+                if i == j:
+                    continue
+                if feature_tag[j] == 0:
+                    if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j]):
+                        pass
+                        # print "".join(word_cut_array[i]), "".join(word_cut_array[j])
+                    num = 0
+                    for word_cut_array_k in fc.feature_cut_array:
+                        similar = calculate_sim_by_cut(word_index_dic, doc_ids,
+                                                       word_cut_array_k,
+                                                       word_cut_array[j])
+                        # print "".join(word_cut_array_k), "".join(word_cut_array[j]), similar
+                        if similar > 0.7:
+                            feature_tag[j] = 1
+                            fc.append_new_feature_cut(word_cut_array[j])
+                            break
+
+                        if similar > 0.12:
+                            num += 1
+                            if float(num) / len(fc.feature_cut_array) > 0.2:
+                                fc.append_new_feature_cut(word_cut_array[j])
+                                feature_tag[j] = 1
+                                break
+
+    # 语义去重
+    for fc in feature_array:
+        new_feature_cut_array = []
+        tag = np.zeros(shape=len(fc.feature_cut_array))
+        for i in range(len(fc.feature_cut_array)):
+            if tag[i] == 0:
+                tag[i] = 1
+                new_feature_cut_array.append(fc.feature_cut_array[i])
+                for j in range(len(fc.feature_cut_array)):
+                    if i == j:
+                        continue
+                    if tag[j] == 0:
+                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j]):
+                            # print "".join(fc.feature_cut_array[i]), "".join(fc.feature_cut_array[j])
+                            tag[j] = 1
+
+        # 这里记得要对去重的话题的新闻分布进行合并
+        fc.feature_cut_array = new_feature_cut_array
+        print fc
+
+    # 将特征文档空间模型转换为文档特征空间模型
+    doc_word_dic = {}
+    for fc in feature_array:
+        for feature_cut_array_k in fc.feature_cut_array:
+            word_name = "".join(feature_cut_array_k)
+            for doc_id in doc_ids[word_index_dic[word_name]]:
+                doc_word_dic[doc_id] = doc_word_dic.get(doc_id, []) + [word_name]
+
+    # 计算事件下每一个话题簇熵重叠度，越小越纯粹
+    entropy_dic = {}
+    for fc in feature_array:
+        for feature_cut_array_k in fc.feature_cut_array:
+            word_name = "".join(feature_cut_array_k)
+            entropy_dic[word_name] = calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
+            # print word_name, calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
+
+    # 根据FTC算法对文档进行映射
+    entropy_list = sorted(entropy_dic.items(), key=lambda x: x[1])
+    news_relative = {}
+    for i in entropy_list:
+        news_relative[i[0]] = doc_ids[word_index_dic[i[0]]]
+        for doc_id in doc_ids[word_index_dic[i[0]]]:
+            for word_name in doc_word_dic[doc_id]:
+                if word_name != i[0]:
+                    doc_ids[word_index_dic[word_name]].remove(doc_id)
+            if doc_id in doc_word_dic:
+                del doc_word_dic[doc_id]
+
+    doc_dic = {}
+    for line in tool.get_file_lines("./dict/filter_doc.txt"):
+        arr = line.split("@@@@")
+        brr = arr[1].split("##")
+        doc_dic[int(arr[0])] = brr[0]
+
+    temp = []
+    for item in news_relative.items():
+        print item[0], item[1]
+        for doc_id in item[1]:
+            print "\t" + doc_dic[doc_id]
+            temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id))
+    tool.write_file("./dict/topic_news_relative.txt", temp, "w")
+
+    temp = []
+    num = 2
+    for fc in feature_array[:3]:
+        for feature_cut_array_k in fc.feature_cut_array:
+            word_name = "".join(feature_cut_array_k)
+            temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
+        num += 1
+    tool.write_file("./dict/event_topic_relative.txt", temp, "w")
