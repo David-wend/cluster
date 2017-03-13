@@ -9,7 +9,6 @@ import jieba
 import remove_duplicate
 import math
 
-
 __author__ = 'david'
 
 
@@ -59,6 +58,7 @@ def calculate_independence(dictionary, word):
     for doc_id in set_i:
         for location_id in dict_i[doc_id].location_ids:
             if location_id > 0:
+                # print dictionary.doc_dic[doc_id].words
                 f_word_set.add(dictionary.doc_dic[doc_id].words[location_id - 1])
             if location_id < len(dictionary.doc_dic[doc_id].words) - 1:
                 l_word_set.add(dictionary.doc_dic[doc_id].words[location_id + 1])
@@ -91,16 +91,16 @@ def get_co_name():
         result_list = sorted(result_dic.items(), key=lambda x: x[1])
         lines = []
         for temp in result_list:
-            try:
-                lines.append(temp[0] + "@@" + str(temp[1]) + "@@" + str(
-                    round(calculate_integrity(i_dic, temp[0]), 4)) + "@@" + str(
-                    round(calculate_stability(i_dic, temp[0]), 4)) + "@@" + "##".join(
-                    [str(round(x, 4)) for x in calculate_independence(i_dic, temp[0])]) + "@@" + "##".join(
-                    [str(round(x, 4)) for x in calculate_independence_by_freq(i_dic, temp[0])]) + "@@" + "##".join(
-                    [str(x) for x in ids_dic[temp[0]]]))
-            except KeyError:
-                print temp[0]
-                continue
+            # try:
+            lines.append(temp[0] + "@@" + str(temp[1]) + "@@" + str(
+                round(calculate_integrity(i_dic, temp[0]), 4)) + "@@" + str(
+                round(calculate_stability(i_dic, temp[0]), 4)) + "@@" + "##".join(
+                [str(round(x, 4)) for x in calculate_independence(i_dic, temp[0])]) + "@@" + "##".join(
+                [str(round(x, 4)) for x in calculate_independence_by_freq(i_dic, temp[0])]) + "@@" + "##".join(
+                [str(x) for x in ids_dic[temp[0]]]))
+            # except KeyError:
+            #     print temp[0]
+            #     continue
         tool.write_file("./dict/word_co.txt", lines, "a")
         try:
             del result_dic[u"新闻"]
@@ -151,45 +151,13 @@ def remove_non_sense_word(words, freq, values):
     for w_i in words:
         if freq[w_i] > 2:
             if values[w_i][0] > 0.7 and values[w_i][1] > 0.52 and values[w_i][2] > 0.6:
-                # print words[i], calculate_total_weight(freq[i], values[i])
                 result[w_i] = calculate_total_weight(freq[w_i], values[w_i])
-                # if w_i[:-1] in result:
-                #     # candidate_remove[words[i][:-1]] = result[words[i][:-1]]
-                #     if w_i[:-1] in result and result[w_i[:-1]] < 5 and values[w_i][0] > 0.8:
-                #         del result[w_i[:-1]]
-                # if w_i[1:] in result:
-                #     # candidate_remove[words[i][1:]] = result[words[i][1:]]
-                #     if w_i[1:] in result and result[w_i[1:]] < 5 and values[w_i][0] > 0.8:
-                #         del result[w_i[1:]]
+            elif len(w_i) > 3 and freq[w_i] > 12 and values[w_i][0] > 0.45 and values[w_i][1] > 0.45 and values[w_i][
+                2] > 0.7:
+                result[w_i] = calculate_total_weight(freq[w_i], values[w_i])
+
     result_list = sorted(result.keys(), key=lambda x: x[1], reverse=False)  # 排序比较keys
     return result_list
-
-
-def split_data_set(data, label, num, flag0=0, flag1=0):
-    data = np.matrix(data)
-    train_X = data[:num]
-    train_Y = label[:num]
-    if flag0 == 1:
-        train_X_1 = train_X[np.where(train_Y == 1)]
-        train_X_1 = train_X_1.repeat(2, axis=0)
-        train_X_0 = train_X[np.where(train_Y == 0)]
-        train_X_0 = train_X_0[:train_X_1.shape[0]]
-        train_X = np.concatenate((train_X_0, train_X_1))
-        train_Y = np.concatenate(
-            (np.zeros(train_X_1.shape[0], dtype=np.int), np.ones(train_X_1.shape[0], dtype=np.int)))
-
-    test_X = data[num:]
-    test_Y = label[num:]
-    if flag1 == 1:
-        test_X_1 = test_X[np.where(test_Y == 1)]
-        test_X_1 = test_X_1.repeat(2, axis=0)
-        test_X_0 = test_X[np.where(test_Y == 0)]
-        test_X_0 = test_X_0[:test_X_1.shape[0]]
-        test_X = np.concatenate((test_X_0, test_X_1))
-        test_Y = np.concatenate(
-            (np.zeros(test_X_0.shape[0], dtype=np.int), np.ones(test_X_1.shape[0], dtype=np.int)))
-    print len(train_X), len(train_Y), len(test_X), len(test_Y)
-    return train_X, train_Y, test_X, test_Y
 
 
 def train_clf():
@@ -244,9 +212,10 @@ def calculate_entropy(doc_ids, doc_word_dic):
 
 if __name__ == '__main__':
 
+    # get_co_name()
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
-    # get_co_name()
+
     words, freq, values, doc_ids, word_index_dic = load_data()
 
     # print remove_duplicate.count_similar([[x for x in jieba.cut("出轨事件")]], [x for x in jieba.cut("出轨对象")], 0.5)
@@ -258,15 +227,6 @@ if __name__ == '__main__':
     # label = words_pd["label"]
     # word_name = words_pd["word_name"]
     word_name = remove_non_sense_word(words, freq, values)
-
-    # 根据层次结构去重，在聚类之后做比较好
-    # word_set = set([])
-    # word_remove_set = set([])
-    # for w in word_name:
-    #     word_set.add(w)
-    #     word_remove_set.add(w[:-1])
-    #     word_remove_set.add(w[1:])
-    # filter_word_name = word_set - word_remove_set
 
     # 分词
     word_cut_array = []
@@ -305,19 +265,20 @@ if __name__ == '__main__':
                                                        word_cut_array_k,
                                                        word_cut_array[j])
                         # print "".join(word_cut_array_k), "".join(word_cut_array[j]), similar
-                        if similar > 0.7:
+                        if similar > 0.8:
                             feature_tag[j] = 1
                             fc.append_new_feature_cut(word_cut_array[j])
                             break
 
-                        if similar > 0.12:
+                        if similar > 0.3:
                             num += 1
-                            if float(num) / len(fc.feature_cut_array) > 0.2:
+                            if float(num) / len(fc.feature_cut_array) > 0.75:
                                 fc.append_new_feature_cut(word_cut_array[j])
                                 feature_tag[j] = 1
                                 break
 
     for fc in feature_array:
+        # print fc
         # 语义去重
         new_feature_cut_array = []
         tag = np.zeros(shape=len(fc.feature_cut_array))
@@ -334,25 +295,26 @@ if __name__ == '__main__':
                             tag[j] = 1
 
         # 这里记得要对去重的话题的新闻分布进行合并
-        fc.feature_cut_array = new_feature_cut_array
+        # fc.feature_cut_array = new_feature_cut_array
 
         # 上下级别位置去重
-        fc_words = sorted(["".join(x) for x in fc.feature_cut_array], key=lambda x:len(x), reverse=False)
+        fc_words = sorted(["".join(x) for x in fc.feature_cut_array], key=lambda x: len(x), reverse=False)
         result = {}
         for word in fc_words:
             similar_w = calculate_total_weight(freq[word], values[word])
             result[word] = similar_w
             if word[:-1] in result:
-                if word[:-1] in result and values[word[1:]][0] > 0.8:
+                if word[:-1] in result and values[word[:-1]][0] > 0.8:
                     del result[word[:-1]]
             if word[1:] in result:
                 if word[1:] in result and values[word[1:]][0] > 0.8:
                     del result[word[1:]]
 
+        temp = ""
         for i in result.keys():
-            print i,
-        print
-        print fc
+            temp = temp + i + " "
+        print temp
+        # print fc
 
     # 将特征文档空间模型转换为文档特征空间模型
     doc_word_dic = {}
