@@ -1,43 +1,174 @@
 # coding=utf-8
 
 import sql_tool
-import sl_tool
+from datetime import datetime
+import count
+import tool
+import numpy as np
+import jieba.posseg as pseg
+import Inverted_index
 
 
-def insert_news(conn, cursor):
-    sql = "select news_id, news_website_id, news_website_type, news_url, news_title, " \
-          "news_content, news_datetime, news_source, news_source_url, news_image, " \
-          "news_author, news_comment_url_args from news where news_title like '%林丹%'" \
-          "or news_title like '%罗尔%' or news_title like '%裸贷%'"
+def insert_topic():
+    words, freq, values, doc_ids, word_index_dic = count.load_data()
+    topic_names = u"谌龙@@林丹@@李永波@@神秘女@@李宗伟@@出轨门@@谢杏芳@@原谅林丹@@林丹承认@@孕期出轨@@出轨事件@@林丹出轨@@" \
+                  u"营销@@罗尔@@民政局@@三套房@@白血病@@罗一笑@@卖房救女@@罗尔回应@@罗尔事件@@罗一笑捐款@@罗一笑父亲@@罗一笑事件" \
+                  u"@@裸贷@@女生裸贷@@女大学生"
+    temp = []
+    for topic_name in topic_names.split("@@"):
+        temp.append([word_index_dic[topic_name], "", 2, topic_name, 1, datetime.now(), ""])
 
-    data = sql_tool.select(sql)
-    sql = "insert into yunshan_news values(%s,%s,%s,%s,%s,%s,%s,%s," \
-          "%s,%s,%s,%s)"
-    sql_tool.save_many_into_mysql(conn, cursor, sql, data)
-
-
-def insert_comment(conn, cursor):
-    sql = "select news_comment_id, news_id, news_comment_content, " \
-          "news_comment_datetime, news_comment_goodnumber from news_comment " \
-          "where news_id in (select news_id from yunshan_news where news_title " \
-          "like '%裸贷%') limit 15"
-    tuples = sql_tool.select(sql)
-    sql = "insert into yunshan_top_comment(comment_id, news_id, comment_content," \
-          "comment_datetime, comment_good_number) values(%s,%s,%s,%s,%s)"
-    sql_tool.save_many_into_mysql(conn, cursor, sql, tuples)
+    conn, cursor = sql_tool.connect_mysql()
+    sql = "insert into yunshan_topic values(%s, %s, %s, %s, %s, %s, %s)"
+    sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
 
 
-def insert_topic_news_relative(conn, cursor):
-    sql = "select news_id from yunshan_news where news_title like '%林丹%'"
-    data = sql_tool.select(sql)
-    results = []
-    for i in data:
-        results.append([i[0], long(0)])
-    sql = "insert into yunshan_topic_news_relative values(%s,%s)"
-    sql_tool.save_many_into_mysql(conn, cursor, sql, results)
+def insert_topic_news_relative():
+    temp = []
+    for line in tool.get_file_lines("./dict/topic_news_relative.txt"):
+        arr = line.split("@@")
+        temp.append([int(arr[0]), int(arr[1])])
+    conn, cursor = sql_tool.connect_mysql()
+    sql = "insert into yunshan_topic_news_relative(topic_id, news_id) values(%s, %s)"
+    sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
 
+
+def insert_event_topic_relative():
+    temp = []
+    for line in tool.get_file_lines("./dict/event_topic_relative.txt"):
+        arr = line.split("@@")
+        temp.append([int(arr[0]), int(arr[1])])
+    conn, cursor = sql_tool.connect_mysql()
+    sql = "insert into yunshan_event_topic_relative(event_id, topic_id) values(%s, %s)"
+    sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
+
+
+def update_topic_datetime():
+    sql = "select topic_id from yunshan_topic"
+    topic_rows = sql_tool.select(sql)
+    for row in topic_rows:
+        sql = "select news_datetime from yunshan_news where news_id in " \
+              "(select news_id from yunshan_topic_news_relative where topic_id = %d) " \
+              "and news_datetime != '0000-00-00 00:00:00' order by news_datetime asc limit 1" % row[0]
+        datetime_rows = sql_tool.select(sql)
+        try:
+            sql = "update yunshan_topic set topic_datetime = '%s' where topic_id = %d " % \
+                  (datetime_rows[0][0].strftime("%Y-%m-%d %H:%M:%S"), row[0])
+            print sql
+        except:
+            sql = "update yunshan_topic set topic_datetime = '2016-11-17 21:09:39' where topic_id = %d " % \
+                  (row[0])
+            print sql
+            continue
+
+
+def update_event_datetime():
+    sql = "select event_id from yunshan_event"
+    event_rows = sql_tool.select(sql)
+    for row in event_rows:
+        sql = "select topic_datetime from yunshan_topic where topic_id in " \
+              "(select topic_id from yunshan_event_topic_relative where event_id = %d) " \
+              "and topic_datetime != '0000-00-00 00:00:00' order by topic_datetime asc limit 1" % row[0]
+        datetime_rows = sql_tool.select(sql)
+        try:
+            sql = "update yunshan_event set event_datetime = '%s' where event_id = %d " % \
+                  (datetime_rows[0][0].strftime("%Y-%m-%d %H:%M:%S"), row[0])
+            print sql
+        except:
+            sql = "update yunshan_event set event_datetime = '2016-11-17 21:09:39' where topic_id = %d " % \
+                  (row[0])
+            print sql
+            continue
+
+
+def update_topic_img():
+    sql = "select topic_id from yunshan_topic"
+    topic_rows = sql_tool.select(sql)
+    for row in topic_rows:
+        sql = "select news_image_url from yunshan_news where news_id in " \
+              "(select news_id from yunshan_topic_news_relative where topic_id = %d) " \
+              "and news_image_url != '' order by news_datetime asc limit 1" % row[0]
+        # print sql
+        img_rows = sql_tool.select(sql)
+        # print img_rows
+        try:
+            sql = "update yunshan_topic set topic_img_url = '%s' where topic_id = %d " % \
+                  (img_rows[0][0], row[0])
+            print sql
+            sql_tool.select(sql)
+        except:
+            sql = "update yunshan_topic set topic_img_url = '无图片' where topic_id = %d " % \
+                  (row[0])
+            sql_tool.select(sql)
+            continue
+
+
+def insert_topic_evaluation_object_relative():
+    sql = "select topic_id from yunshan_topic where topic_id in (select topic_id " \
+          "from yunshan_event_topic_relative where event_id = 4)"
+    topic_rows = sql_tool.select(sql)
+    print topic_rows
+    temp = []
+    for row in topic_rows:
+        temp.append([row[0], 9])
+        # temp.append([row[0], 7])
+        # temp.append([row[0], 8])
+    conn, cursor = sql_tool.connect_mysql()
+    sql = "insert into yunshan_topic_evaluation_object_relative(topic_id, evaluation_object_id) values(%s, %s)"
+    sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
+
+
+def insert_web_num():
+    sql = "select topic_id from yunshan_topic where topic_id != 0 and topic_id != 1"
+    topic_rows = sql_tool.select(sql)
+    temp = []
+    for row in topic_rows:
+        arr = [int(x) for x in np.random.random(size=5) * 10]
+        temp.append([row[0], arr[0], arr[1], arr[2], arr[3], arr[4]])
+
+    conn, cursor = sql_tool.connect_mysql()
+    sql = "insert into yunshan_web_num values(%s, %s, %s, %s, %s, %s)"
+    sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
+
+
+def insert_topic_keyword_relative():
+    event_id = 4
+    sql = "select topic_id from yunshan_event_topic_relative where event_id = %d " % event_id
+    topic_rows = sql_tool.select(sql)
+    temp = []
+    temp_e = []
+    temp_e.append([event_id, 5, 2])
+    temp_e.append([event_id, 4, 2])
+    for row in topic_rows:
+
+        temp.append([row[0], 5, 2])
+        temp.append([row[0], 4, 2])
+        # temp.append([row[0], 2, 2])
+        # temp.append([row[0], 3, 2])
+        # temp_e.append([event_id, 5, 2])
+        # temp_e.append([event_id, 4, 2])
+        # temp_e.append([event_id, 2, 2])
+        # temp_e.append([event_id, 3, 2])
+
+    conn, cursor = sql_tool.connect_mysql()
+    sql = "insert into yunshan_event_keyword_relative values(%s, %s, %s)"
+    sql_tool.save_many_into_mysql(conn, cursor, sql, temp_e)
+
+    # sql = "insert into yunshan_topic_keyword_relative values(%s, %s, %s)"
+    # sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
 
 
 if __name__ == '__main__':
-    conn, cursor = sql_tool.connect_mysql()
-    insert_topic_news_relative(conn, cursor)
+    # insert_topic_keyword_relative()
+    # i_dic = Inverted_index.InvertDic()
+    # i_dic.init_all_dic()
+    # print count.calculate_novelty(i_dic, u"台")
+    # print count.calculate_novelty(i_dic, u"男")
+    # print count.calculate_novelty(i_dic, u"女")
+    a = [1,2,3,4,1]
+    a.remove(1)
+    print a
+
+# select news_datetime from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_datetime != "0000-00-00 00:00:00" order by news_datetime asc limit 1
+# select topic_datetime from yunshan_topic where topic_id in (select topic_id from yunshan_event_topic_relative where event_id = 2) and topic_datetime != "0000-00-00 00:00:00" order by topic_datetime asc limit 1
+# select news_image_url from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_image_url is not null order by news_datetime asc limit 1

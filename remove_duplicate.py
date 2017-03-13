@@ -93,8 +93,8 @@ def remove_duplicate():
 
 
 if __name__ == '__main__':
-    remove_duplicate()
-    create_news_doc.transform_doc()
-    # count.get_co_name()
+    # remove_duplicate()
+    # create_news_doc.transform_doc()
+    count.get_co_name()
 
 

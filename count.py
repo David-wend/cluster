@@ -24,6 +24,26 @@ class FeatureCluster:
         return "@@".join(["".join(y) for y in self.feature_cut_array])
 
 
+def calculate_hot(dictionary, freq_mode):
+    pass
+
+
+def calculate_novelty(dictionary, word):
+    set_i, dict_i = dictionary.transform_term_info(word)
+    time = []
+    for t in set_i:
+        time.append(dictionary.doc_dic[t].time)
+    time = np.sort(np.array(time))
+    max_time = time.max()
+    min_time = time.min()
+    delta = max_time - min_time
+    arr = np.zeros(abs(delta.days) + 1)
+    for t in time:
+        delta = t - min_time
+        arr[delta.days] += 1
+    return [arr.std() / arr.mean(), arr.sum()]
+
+
 def calculate_integrity(dictionary, word):
     word_freq = dictionary.word_freq_dic[dictionary.word_index_dic[word]]
     f_word_freq = dictionary.word_freq_dic.get(dictionary.word_index_dic.get(word[:-1], ""), 1)
@@ -69,7 +89,7 @@ def get_co_name():
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     candidate_list = i_dic.word_index_dic.keys()
-    limit_dic = {1: 4, 2: 3, 3: 3, 4: 3, 5: 2}
+    limit_dic = {1: 8, 2: 3, 3: 3, 4: 2, 5: 2}
     ids_dic = {}
     # result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
@@ -95,6 +115,7 @@ def get_co_name():
             lines.append(temp[0] + "@@" + str(temp[1]) + "@@" + str(
                 round(calculate_integrity(i_dic, temp[0]), 4)) + "@@" + str(
                 round(calculate_stability(i_dic, temp[0]), 4)) + "@@" + "##".join(
+                [str(round(x, 4)) for x in calculate_novelty(i_dic, temp[0])]) + "@@" + "##".join(
                 [str(round(x, 4)) for x in calculate_independence(i_dic, temp[0])]) + "@@" + "##".join(
                 [str(round(x, 4)) for x in calculate_independence_by_freq(i_dic, temp[0])]) + "@@" + "##".join(
                 [str(x) for x in ids_dic[temp[0]]]))
@@ -135,9 +156,10 @@ def load_data():
         word_index_dic[word] = num
         num += 1
         freq[word] = int(arr[1])
-        brr = arr[4].split("##")
-        values[word] = [float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1])]
-        doc_ids[word] = [int(x) for x in arr[6].split("##")]
+        crr = arr[4].split("##")
+        brr = arr[5].split("##")
+        values[word] = [float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1]), float(crr[0]), float(crr[1])]
+        doc_ids[word] = [int(x) for x in arr[7].split("##")]
     return words, freq, values, doc_ids, word_index_dic
 
 
@@ -215,10 +237,7 @@ if __name__ == '__main__':
     # get_co_name()
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
-
     words, freq, values, doc_ids, word_index_dic = load_data()
-
-    # print remove_duplicate.count_similar([[x for x in jieba.cut("出轨事件")]], [x for x in jieba.cut("出轨对象")], 0.5)
 
     # 读取已经标注的词语
     # words_pd = pd.read_csv('./dict/word_info.txt', header=None, sep=',')
@@ -232,7 +251,6 @@ if __name__ == '__main__':
     word_cut_array = []
     # for word in words:
     for word in word_name:
-        # print word
         if len(word) > 2:
             word_cut_array.append([x for x in jieba.cut(word)])
         else:
@@ -277,8 +295,30 @@ if __name__ == '__main__':
                                 feature_tag[j] = 1
                                 break
 
+    # 话题去重
     for fc in feature_array:
-        # print fc
+        print fc
+
+        # 上下级别位置去重
+        new_feature_cut_array = []
+        fca_sorted = sorted(fc.feature_cut_array, key=lambda x: len("".join(x)), reverse=False)
+        words_fca_dict = {"".join(fca): fca for fca in fca_sorted}
+        result = {}
+        for fca in fca_sorted:
+            word = "".join(fca)
+            similar_w = calculate_total_weight(freq[word], values[word])
+            result[word] = similar_w
+            new_feature_cut_array.append(words_fca_dict[word])
+            if word[:-1] in result:
+                if word[:-1] in result and values[word[:-1]][0] > 0.8:
+                    new_feature_cut_array.remove(words_fca_dict[word[:-1]])
+                    del result[word[:-1]]
+            if word[1:] in result:
+                if word[1:] in result and values[word[1:]][0] > 0.8:
+                    new_feature_cut_array.remove(words_fca_dict[word[1:]])
+                    del result[word[1:]]
+        fc.feature_cut_array = new_feature_cut_array
+
         # 语义去重
         new_feature_cut_array = []
         tag = np.zeros(shape=len(fc.feature_cut_array))
@@ -290,31 +330,13 @@ if __name__ == '__main__':
                     if i == j:
                         continue
                     if tag[j] == 0:
-                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.4):
+                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 1):
                             # print "".join(fc.feature_cut_array[i]), "".join(fc.feature_cut_array[j])
                             tag[j] = 1
 
         # 这里记得要对去重的话题的新闻分布进行合并
-        # fc.feature_cut_array = new_feature_cut_array
-
-        # 上下级别位置去重
-        fc_words = sorted(["".join(x) for x in fc.feature_cut_array], key=lambda x: len(x), reverse=False)
-        result = {}
-        for word in fc_words:
-            similar_w = calculate_total_weight(freq[word], values[word])
-            result[word] = similar_w
-            if word[:-1] in result:
-                if word[:-1] in result and values[word[:-1]][0] > 0.8:
-                    del result[word[:-1]]
-            if word[1:] in result:
-                if word[1:] in result and values[word[1:]][0] > 0.8:
-                    del result[word[1:]]
-
-        temp = ""
-        for i in result.keys():
-            temp = temp + i + " "
-        print temp
-        # print fc
+        fc.feature_cut_array = new_feature_cut_array
+        print fc
 
     # 将特征文档空间模型转换为文档特征空间模型
     doc_word_dic = {}
