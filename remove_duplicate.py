@@ -6,6 +6,7 @@ import numpy as np
 from jieba import posseg as pseg
 import create_news_doc
 import count
+from datetime import datetime
 
 
 def count_similar(title_arr_list, title_arr_j, limit_info):
@@ -93,8 +94,9 @@ def remove_duplicate():
 
 
 if __name__ == '__main__':
+    print datetime.now()
     # remove_duplicate()
-    # create_news_doc.transform_doc()
+    create_news_doc.transform_doc()
     count.get_co_name()
 
 

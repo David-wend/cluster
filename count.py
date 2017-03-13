@@ -26,9 +26,10 @@ class FeatureCluster:
         return "@@".join(["".join(y) for y in self.feature_cut_array])
 
 
-def update_doc_id(doc_id_dic, new_fm, old_fm):
-    doc_id_dic[new_fm] += doc_id_dic[old_fm]
-    del doc_id_dic[old_fm]
+def update_doc_id(doc_id_dic, new_word, old_word):
+    doc_id_dic[new_word] = list(set(doc_id_dic[new_word]).union(set(doc_id_dic[old_word])))
+    del doc_id_dic[old_word]
+    return doc_id_dic
 
 
 def calculate_hot(doc_id_dic, freq_mode):
@@ -39,14 +40,15 @@ def calculate_hot(doc_id_dic, freq_mode):
     return np.sqrt(hot_value)
 
 
-def calculate_fm_high_freq_day(dictionary, word):
+def calculate_fm_day_info(dictionary, word):
     set_i, dict_i = dictionary.transform_term_info(word)
     time = []
     for t in set_i:
         new_datetime = datetime(dictionary.doc_dic[t].time.year, dictionary.doc_dic[t].time.month,
                                 dictionary.doc_dic[t].time.day, 0, 0, 0)
         time.append(new_datetime)
-    return Counter(time).most_common(1)[0][0]
+    time = np.array(time)
+    return [Counter(time).most_common(1)[0][0], time.min(), time.max()]
 
 
 def calculate_novelty(dictionary, word):
@@ -147,6 +149,7 @@ def get_co_name():
         try:
             del result_dic[u"新闻"]
             del result_dic[u"搜狐"]
+            del result_dic[u"腾讯"]
         except:
             pass
         candidate_list = result_dic.keys()
@@ -239,10 +242,13 @@ def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_a
             if j == u"事件":
                 continue
             word_j_set = word_j_set | set(doc_ids[j])
+    word_i = "".join(word_i_cut_array)
+    word_j = "".join(word_j_cut_array)
+    lcs_similar = float(len(tool.lcs(word_i, word_j))) / max(len(word_i), len(word_j)) + 1
     # return float(len(word_i_set & word_j_set)) / (min_len * np.sqrt(max_len)), float(
     #     len(word_i_set & word_j_set)) / min(len(word_i_set), len(word_j_set)), float(
     #     len(word_i_set & word_j_set)) / (np.sqrt(min_len) * np.sqrt(max_len))
-    return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
+    return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set))) * lcs_similar
 
 
 def calculate_entropy(doc_ids, doc_word_dic):
@@ -304,14 +310,14 @@ if __name__ == '__main__':
                                                        word_cut_array_k,
                                                        word_cut_array[j])
                         # print "".join(word_cut_array_k), "".join(word_cut_array[j]), similar
-                        if similar > 0.8:
+                        if similar > 1.2:
                             feature_tag[j] = 1
                             fc.append_new_feature_cut(word_cut_array[j])
                             break
-
-                        if similar > 0.3:
+                        # 8 3 0.75
+                        if similar > 0.6:
                             num += 1
-                            if float(num) / len(fc.feature_cut_array) > 0.75:
+                            if float(num) / len(fc.feature_cut_array) > 0.8:
                                 fc.append_new_feature_cut(word_cut_array[j])
                                 feature_tag[j] = 1
                                 break
@@ -333,10 +339,12 @@ if __name__ == '__main__':
             if word[:-1] in result:
                 if values[word][0] > 0.8:
                     new_feature_cut_array.remove(words_fca_dict[word[:-1]])
+                    doc_ids = update_doc_id(doc_ids, word, word[:-1])
                     del result[word[:-1]]
             if word[1:] in result:
                 if values[word][0] > 0.8:
                     new_feature_cut_array.remove(words_fca_dict[word[1:]])
+                    doc_ids = update_doc_id(doc_ids, word, word[1:])
                     del result[word[1:]]
         fc.feature_cut_array = new_feature_cut_array
         print fc
@@ -357,6 +365,8 @@ if __name__ == '__main__':
                     if tag[j] == 0:
                         if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 1):
                             # print "".join(fc.feature_cut_array[i]), "".join(fc.feature_cut_array[j])
+                            doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
+                                                    "".join(fc.feature_cut_array[j]))
                             tag[j] = 1
 
         # 这里记得要对去重的话题的新闻分布进行合并
@@ -413,3 +423,9 @@ if __name__ == '__main__':
             temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
         num += 1
     tool.write_file("./dict/event_topic_relative.txt", temp, "w")
+
+    print "输出结果如下"
+    result = sorted(feature_array, key=lambda x: calculate_hot(doc_ids, x), reverse=True)
+    for fc in result:
+        if len(fc.feature_cut_array) > 1:
+            print fc, calculate_hot(doc_ids, fc)
