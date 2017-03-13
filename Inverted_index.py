@@ -197,6 +197,12 @@ class InvertDic:
         """
         ids = []
         locations = []
+        # word_k = word_i + self.index_word_dic[self.word_comb_word_dic[self.word_index_dic[word_j]][-1]]
+        # if word_k in self.word_index_dic:
+        #     for t in self.word_term_dic[self.word_index_dic[word_k]]:
+        #         ids.append(t.doc_id)
+        #         locations.append(t.location_ids)
+
         set_i, dict_i = self.transform_term_info(word_i)
         set_j, dict_j = self.transform_term_info(word_j)
 
@@ -209,7 +215,6 @@ class InvertDic:
             for id_i in list_i:
                 for id_j in list_j:
                     if id_i == id_j - 1:
-                    # if id_i < id_j :
                         if k not in ids:
                             ids.append(k)
                         temp.append(id_i)

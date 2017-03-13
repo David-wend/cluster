@@ -8,6 +8,8 @@ from sklearn import tree
 import jieba
 import remove_duplicate
 import math
+from collections import Counter
+from datetime import datetime
 
 __author__ = 'david'
 
@@ -24,8 +26,27 @@ class FeatureCluster:
         return "@@".join(["".join(y) for y in self.feature_cut_array])
 
 
-def calculate_hot(dictionary, freq_mode):
-    pass
+def update_doc_id(doc_id_dic, new_fm, old_fm):
+    doc_id_dic[new_fm] += doc_id_dic[old_fm]
+    del doc_id_dic[old_fm]
+
+
+def calculate_hot(doc_id_dic, freq_mode):
+    hot_value = 0
+    for feature_cut_array_k in freq_mode.feature_cut_array:
+        word = "".join(feature_cut_array_k)
+        hot_value += len(doc_id_dic[word]) ** 2
+    return np.sqrt(hot_value)
+
+
+def calculate_fm_high_freq_day(dictionary, word):
+    set_i, dict_i = dictionary.transform_term_info(word)
+    time = []
+    for t in set_i:
+        new_datetime = datetime(dictionary.doc_dic[t].time.year, dictionary.doc_dic[t].time.month,
+                                dictionary.doc_dic[t].time.day, 0, 0, 0)
+        time.append(new_datetime)
+    return Counter(time).most_common(1)[0][0]
 
 
 def calculate_novelty(dictionary, word):
@@ -89,7 +110,7 @@ def get_co_name():
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     candidate_list = i_dic.word_index_dic.keys()
-    limit_dic = {1: 8, 2: 3, 3: 3, 4: 2, 5: 2}
+    limit_dic = {1: 4, 2: 3, 3: 3, 4: 2, 5: 2}
     ids_dic = {}
     # result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
@@ -164,7 +185,7 @@ def load_data():
 
 
 def calculate_total_weight(freq, values):
-    return freq * 0.5 + values[0] + values[1] + values[2] + values[3]
+    return freq * 0.1 + values[0] + values[1] + values[2] + values[3]
 
 
 def remove_non_sense_word(words, freq, values):
@@ -297,7 +318,7 @@ if __name__ == '__main__':
 
     # 话题去重
     for fc in feature_array:
-        print fc
+        print fc, calculate_hot(doc_ids, fc)
 
         # 上下级别位置去重
         new_feature_cut_array = []
@@ -310,18 +331,22 @@ if __name__ == '__main__':
             result[word] = similar_w
             new_feature_cut_array.append(words_fca_dict[word])
             if word[:-1] in result:
-                if word[:-1] in result and values[word[:-1]][0] > 0.8:
+                if values[word][0] > 0.8:
                     new_feature_cut_array.remove(words_fca_dict[word[:-1]])
                     del result[word[:-1]]
             if word[1:] in result:
-                if word[1:] in result and values[word[1:]][0] > 0.8:
+                if values[word][0] > 0.8:
                     new_feature_cut_array.remove(words_fca_dict[word[1:]])
                     del result[word[1:]]
         fc.feature_cut_array = new_feature_cut_array
+        print fc
 
         # 语义去重
         new_feature_cut_array = []
         tag = np.zeros(shape=len(fc.feature_cut_array))
+        fc.feature_cut_array = sorted(fc.feature_cut_array,
+                                      key=lambda x: len("".join(x)),
+                                      reverse=True)
         for i in range(len(fc.feature_cut_array)):
             if tag[i] == 0:
                 tag[i] = 1
