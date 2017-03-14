@@ -7,6 +7,9 @@ import tool
 import numpy as np
 import jieba.posseg as pseg
 import Inverted_index
+from collections import Counter
+import jieba
+import create_news_doc
 
 
 def insert_topic():
@@ -140,7 +143,6 @@ def insert_topic_keyword_relative():
     temp_e.append([event_id, 5, 2])
     temp_e.append([event_id, 4, 2])
     for row in topic_rows:
-
         temp.append([row[0], 5, 2])
         temp.append([row[0], 4, 2])
         # temp.append([row[0], 2, 2])
@@ -162,12 +164,12 @@ if __name__ == '__main__':
     # insert_topic_keyword_relative()
     # i_dic = Inverted_index.InvertDic()
     # i_dic.init_all_dic()
-    # print count.calculate_novelty(i_dic, u"台")
+    # print count.calculate_fm_high_freq_day(i_dic, u"台")
     # print count.calculate_novelty(i_dic, u"男")
     # print count.calculate_novelty(i_dic, u"女")
-    a = [1,2,3,4,1]
-    a.remove(1)
-    print a
+
+    create_news_doc.insert_doc_from_mongodb()
+
 
 # select news_datetime from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_datetime != "0000-00-00 00:00:00" order by news_datetime asc limit 1
 # select topic_datetime from yunshan_topic where topic_id in (select topic_id from yunshan_event_topic_relative where event_id = 2) and topic_datetime != "0000-00-00 00:00:00" order by topic_datetime asc limit 1
