@@ -35,14 +35,6 @@ def select(sql, t=None):
 
 
 def save_many_into_mysql(conn, cursor, sql, temp):
-    """ 批量存入
-
-    :param conn:
-    :param cursor:
-    :param sql:
-    :param temp:
-    :return:
-    """
     try:
         cursor.executemany(sql, temp)
         conn.commit()

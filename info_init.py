@@ -11,7 +11,7 @@ flagdir:单词词性词典
 speechdir:词性权重词典
 
 '''
-similarity_limit = 3.0
+similarity_limit = 1.0
 speechdir = sl_tool.get_speech_dic()
 termdir, flagdir = sl_tool.get_term_dir()
 word_class_relative = {u"体育": u"体育", u"健康": u"其他", u"军事": u"军事", u"减肥": u"其他", u"动漫": u"其他",

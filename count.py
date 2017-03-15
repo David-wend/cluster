@@ -27,12 +27,25 @@ class FeatureCluster:
 
 
 def update_doc_id(doc_id_dic, new_word, old_word):
+    """ 将old_word下所有文档归类到new_word
+
+    :param doc_id_dic:
+    :param new_word:
+    :param old_word:
+    :return:
+    """
     doc_id_dic[new_word] = list(set(doc_id_dic[new_word]).union(set(doc_id_dic[old_word])))
     del doc_id_dic[old_word]
     return doc_id_dic
 
 
 def calculate_hot(doc_id_dic, freq_mode):
+    """ 计算特征热度，计算公式为它所包含的新闻数目平方和的二次方,即sqrt(a**2+b**2)
+
+    :param doc_id_dic:
+    :param freq_mode:
+    :return:
+    """
     hot_value = 0
     for feature_cut_array_k in freq_mode.feature_cut_array:
         word = "".join(feature_cut_array_k)
@@ -41,6 +54,12 @@ def calculate_hot(doc_id_dic, freq_mode):
 
 
 def calculate_fm_day_info(dictionary, word):
+    """ 返回频繁模式在出现的时间信息，第一天，出现次数的天数，以及最后一天
+
+    :param dictionary:
+    :param word:
+    :return:
+    """
     set_i, dict_i = dictionary.transform_term_info(word)
     time = []
     for t in set_i:
@@ -52,6 +71,12 @@ def calculate_fm_day_info(dictionary, word):
 
 
 def calculate_novelty(dictionary, word):
+    """ 根据频繁模式出现的时间规律，计算新颖度，公式为出现次数的变异系数
+
+    :param dictionary:
+    :param word:
+    :return:
+    """
     set_i, dict_i = dictionary.transform_term_info(word)
     time = []
     for t in set_i:
@@ -68,12 +93,24 @@ def calculate_novelty(dictionary, word):
 
 
 def calculate_integrity(dictionary, word):
+    """ 计算完整性
+
+    :param dictionary:
+    :param word:
+    :return:
+    """
     word_freq = dictionary.word_freq_dic[dictionary.word_index_dic[word]]
     f_word_freq = dictionary.word_freq_dic.get(dictionary.word_index_dic.get(word[:-1], ""), 1)
     return float(word_freq) / f_word_freq
 
 
 def calculate_stability(dictionary, word):
+    """ 计算稳定性
+
+    :param dictionary:
+    :param word:
+    :return:
+    """
     word_freq = dictionary.word_freq_dic[dictionary.word_index_dic[word]]
     f_word_freq = dictionary.word_freq_dic.get(dictionary.word_index_dic.get(word[:-1], ""), 1)
     l_word_freq = dictionary.word_freq_dic.get(dictionary.word_index_dic.get(word[1:], ""), 1)
@@ -81,6 +118,12 @@ def calculate_stability(dictionary, word):
 
 
 def calculate_independence_by_freq(dictionary, word):
+    """ 计算灵活性方法1
+
+    :param dictionary:
+    :param word:
+    :return:
+    """
     set_i, dict_i = dictionary.transform_term_info(word)
     f_word_set = set([])
     l_word_set = set([])
@@ -95,6 +138,12 @@ def calculate_independence_by_freq(dictionary, word):
 
 
 def calculate_independence(dictionary, word):
+    """ 计算灵活性方法2
+
+    :param dictionary:
+    :param word:
+    :return:
+    """
     set_i, dict_i = dictionary.transform_term_info(word)
     f_word_set = set([])
     l_word_set = set([])
@@ -109,22 +158,30 @@ def calculate_independence(dictionary, word):
 
 
 def get_co_name():
+    """ 频繁模式挖掘算法
+
+    :return:
+    """
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     candidate_list = i_dic.word_index_dic.keys()
+    # 这里设定n阶频繁模式及其对应的支持度阈值
     limit_dic = {1: 4, 2: 3, 3: 3, 4: 2, 5: 2}
     ids_dic = {}
-    # result_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
+    # 设置最多计算到第K阶的频繁模式
     for k in range(10):
         result_dic = {}
         for i in range(len(candidate_list)):
             for j in range(len(candidate_list)):
                 if i == j:
                     continue
+                # 计算两个频繁模式是否满足条件可以合并
                 if i_dic.add_term_bound(candidate_list[i], candidate_list[j]):
+                    # 获取满足条件的频繁模式文档分布信息
                     ids, locations = i_dic.get_co_occurrence_info(candidate_list[i], candidate_list[j])
                     if len(ids) > limit_dic.get(len(candidate_list[i]), 2):
+                        # 记录新频繁模式的信息
                         i_dic.add_new_term(candidate_list[i], candidate_list[j])
                         new_word = candidate_list[i] + i_dic.index_word_dic[i_dic.word_comb_word_dic[
                             i_dic.word_index_dic[candidate_list[j]]][-1]]
@@ -132,6 +189,7 @@ def get_co_name():
                         ids_dic[new_word] = ids
 
         result_list = sorted(result_dic.items(), key=lambda x: x[1])
+        # 保存所有频繁模式的信息
         lines = []
         for temp in result_list:
             # try:
@@ -156,6 +214,16 @@ def get_co_name():
 
 
 def var_dump_word_tree(word, words, freq, values, doc_ids, word_index_dic):
+    """ 打印某个频繁模式及其子模式
+
+    :param word:
+    :param words:
+    :param freq:
+    :param values:
+    :param doc_ids:
+    :param word_index_dic:
+    :return:
+    """
     word_index = word_index_dic[word]
     print words[word_index], freq[word_index], values[word_index][0], values[word_index][1], \
         values[word_index][2], values[word_index][3]
@@ -165,6 +233,10 @@ def var_dump_word_tree(word, words, freq, values, doc_ids, word_index_dic):
 
 
 def load_data():
+    """ 读取频繁模式信息
+
+    :return:
+    """
     path = "./dict/word_co.txt"
     lines = tool.get_file_lines(path)
     words = []
@@ -192,6 +264,13 @@ def calculate_total_weight(freq, values):
 
 
 def remove_non_sense_word(words, freq, values):
+    """ 根据频繁模式得分进行剪枝
+
+    :param words:
+    :param freq:
+    :param values:
+    :return:
+    """
     result = {}
     # candidate_remove = {}
     for w_i in words:
@@ -224,12 +303,26 @@ def train_clf():
 
 
 def calculate_sim(word_i_doc_ids, word_j_doc_ids):
+    """ 根据文档分布进行相似度
+
+    :param word_i_doc_ids:
+    :param word_j_doc_ids:
+    :return:
+    """
     word_i_set = set(word_i_doc_ids)
     word_j_set = set(word_j_doc_ids)
     return float(len(word_i_set & word_j_set)) / (np.sqrt(len(word_i_set)) * np.sqrt(len(word_j_set)))
 
 
 def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_array):
+    """ 根据文档分布计算相似度
+
+    :param word_index_dic:
+    :param doc_ids:
+    :param word_i_cut_array:
+    :param word_j_cut_array:
+    :return:
+    """
     word_i_set = set([])
     word_j_set = set([])
     for i in word_i_cut_array:
@@ -252,6 +345,12 @@ def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_a
 
 
 def calculate_entropy(doc_ids, doc_word_dic):
+    """ 计算特征的熵重叠度
+
+    :param doc_ids:
+    :param doc_word_dic:
+    :return:
+    """
     entropy_value = 0
     for doc_id in doc_ids:
         entropy_value += -float(1) / len(doc_word_dic[doc_id]) * math.log10(
@@ -259,19 +358,13 @@ def calculate_entropy(doc_ids, doc_word_dic):
     return entropy_value
 
 
-if __name__ == '__main__':
-
-    # get_co_name()
+def landeqiming():
+    # 初始化词典，并读取一阶频繁项集
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     words, freq, values, doc_ids, word_index_dic = load_data()
 
-    # 读取已经标注的词语
-    # words_pd = pd.read_csv('./dict/word_info.txt', header=None, sep=',')
-    # col_names = ["word_name", "freq", "in", "st", "ind_l", "ind_r", "label"]
-    # words_pd.columns = col_names
-    # label = words_pd["label"]
-    # word_name = words_pd["word_name"]
+    # 根据词元得分进行预剪枝
     word_name = remove_non_sense_word(words, freq, values)
 
     # 分词
@@ -283,12 +376,7 @@ if __name__ == '__main__':
         else:
             word_cut_array.append([word])
 
-    # 归一化，聚类效果评价
-    # min_max_scaler = preprocessing.MinMaxScaler()
-    # distance = min_max_scaler.fit_transform([])
-    # print metrics.adjusted_rand_score(label, label)
-
-    # 一趟聚类
+    # 一趟聚类，根据频繁项集文档分布计算相似度
     feature_array = []
     feature_tag = np.zeros(shape=len(word_cut_array))
     distance = np.zeros(shape=(len(word_cut_array), len(word_cut_array)))
@@ -301,20 +389,15 @@ if __name__ == '__main__':
                 if i == j:
                     continue
                 if feature_tag[j] == 0:
-                    if remove_duplicate.count_similar([word_cut_array[i]], word_cut_array[j], 1):
-                        pass
-                        # print "".join(word_cut_array[i]), "".join(word_cut_array[j])
                     num = 0
                     for word_cut_array_k in fc.feature_cut_array:
                         similar = calculate_sim_by_cut(word_index_dic, doc_ids,
                                                        word_cut_array_k,
                                                        word_cut_array[j])
-                        # print "".join(word_cut_array_k), "".join(word_cut_array[j]), similar
                         if similar > 1.2:
                             feature_tag[j] = 1
                             fc.append_new_feature_cut(word_cut_array[j])
                             break
-                        # 8 3 0.75
                         if similar > 0.6:
                             num += 1
                             if float(num) / len(fc.feature_cut_array) > 0.8:
@@ -326,7 +409,7 @@ if __name__ == '__main__':
     for fc in feature_array:
         print fc, calculate_hot(doc_ids, fc)
 
-        # 上下级别位置去重
+        # 根据上下位去重，如有“林丹出轨”去除“林丹出”
         new_feature_cut_array = []
         fca_sorted = sorted(fc.feature_cut_array, key=lambda x: len("".join(x)), reverse=False)
         words_fca_dict = {"".join(fca): fca for fca in fca_sorted}
@@ -349,7 +432,7 @@ if __name__ == '__main__':
         fc.feature_cut_array = new_feature_cut_array
         print fc
 
-        # 语义去重
+        # 根据语义去重
         new_feature_cut_array = []
         tag = np.zeros(shape=len(fc.feature_cut_array))
         fc.feature_cut_array = sorted(fc.feature_cut_array,
@@ -364,12 +447,10 @@ if __name__ == '__main__':
                         continue
                     if tag[j] == 0:
                         if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 1):
-                            # print "".join(fc.feature_cut_array[i]), "".join(fc.feature_cut_array[j])
                             doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
                                                     "".join(fc.feature_cut_array[j]))
                             tag[j] = 1
 
-        # 这里记得要对去重的话题的新闻分布进行合并
         fc.feature_cut_array = new_feature_cut_array
         print fc
 
@@ -389,7 +470,7 @@ if __name__ == '__main__':
             entropy_dic[word_name] = calculate_entropy(doc_ids[word_name], doc_word_dic)
             # print word_name, calculate_entropy(doc_ids[word_index_dic[word_name]], doc_word_dic)
 
-    # 根据FTC算法对文档进行映射
+    # 讲文档优先归类到熵重叠度小的频繁模式
     entropy_list = sorted(entropy_dic.items(), key=lambda x: x[1])
     news_relative = {}
     for i in entropy_list:
@@ -401,12 +482,14 @@ if __name__ == '__main__':
             if doc_id in doc_word_dic:
                 del doc_word_dic[doc_id]
 
+    # 读取文档标题
     doc_dic = {}
     for line in tool.get_file_lines("./dict/filter_doc.txt"):
         arr = line.split("@@@@")
         brr = arr[1].split("##")
         doc_dic[int(arr[0])] = brr[0]
 
+    # 输出频繁模式及相关文档
     temp = []
     for item in news_relative.items():
         print item[0], item[1]
@@ -415,17 +498,22 @@ if __name__ == '__main__':
             temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id))
     tool.write_file("./dict/topic_news_relative.txt", temp, "w")
 
-    temp = []
-    num = 2
-    for fc in feature_array[:3]:
-        for feature_cut_array_k in fc.feature_cut_array:
-            word_name = "".join(feature_cut_array_k)
-            temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
-        num += 1
-    tool.write_file("./dict/event_topic_relative.txt", temp, "w")
+    # temp = []
+    # num = 2
+    # for fc in feature_array[:3]:
+    #     for feature_cut_array_k in fc.feature_cut_array:
+    #         word_name = "".join(feature_cut_array_k)
+    #         temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
+    #     num += 1
+    # tool.write_file("./dict/event_topic_relative.txt", temp, "w")
 
     print "输出结果如下"
+    # 根据频繁模式热度重新排序并输出
     result = sorted(feature_array, key=lambda x: calculate_hot(doc_ids, x), reverse=True)
     for fc in result:
         if len(fc.feature_cut_array) > 1:
             print fc, calculate_hot(doc_ids, fc)
+
+if __name__ == '__main__':
+    landeqiming()
+
