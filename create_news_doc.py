@@ -9,13 +9,22 @@ from datetime import datetime
 import re
 
 
+def connect_mongodb():
+    tool.write_file("./dict/doc.txt", [], "w")
+    conn = MongoClient('192.168.235.36', 27017)
+    db = conn.sea_data
+    num = 0
+    for i in db.news.find({'publish_time': {"$gt": "2017-03-01 00:00:00", "$lte": "2017-03-31 00:00:00"}}):
+        print i
+
+
 def insert_doc_from_mongodb():
     i_dic = Inverted_index.InvertDic()
     tool.write_file("./dict/doc.txt", [], "w")
     conn = MongoClient('192.168.235.36', 27017)
     db = conn.sea_data
     num = 0
-    for i in db.news.find({'publish_time': {"$gt": "2016-12-01 00:00:00", "$lte": "2016-12-31 00:00:00"}}):
+    for i in db.news.find({'publish_time': {"$gt": "2017-03-01 00:00:00", "$lte": "2017-03-31 00:00:00"}}):
         news_id = num
         num += 1
         title = i["title"]
@@ -49,16 +58,19 @@ def transform_doc():
     i = Inverted_index.InvertDic()
     doc_rows = tool.get_file_lines("./dict/filter_doc.txt")
     for row in doc_rows:
-        temp = row.split("@@@@", 1)
-        news = temp[1].split("##", 3)
-        title = news[0].decode("UTF-8")
-        content = news[3].decode("UTF-8")
-        datetime = news[2]
-        news_type = news[1].decode("UTF-8")
-        doc_id = int(temp[0])
-        d = doc_proccess.Doc(title, content, news_type, datetime, doc_id)
-        i.update_invert_index(d)
-        print news[0] + 'done'
+        try:
+            temp = row.split("@@@@", 1)
+            news = temp[1].split("##", 3)
+            title = news[0].decode("UTF-8")
+            content = news[3].decode("UTF-8")
+            datetime = news[2]
+            news_type = news[1].decode("UTF-8")
+            doc_id = int(temp[0])
+            d = doc_proccess.Doc(title, content, news_type, datetime, doc_id)
+            i.update_invert_index(d)
+        except:
+            print row
+        # print news[0] + 'done'
 
     i.save_word_df_dic()
     i.save_word_freq_dic()
@@ -76,5 +88,5 @@ if __name__ == '__main__':
     news_rows = sql_tool.select(sql)
     print len(news_rows)
     insert_doc_from_db(news_rows)
-
+    # insert_doc_from_mongodb()
     # transform_doc()

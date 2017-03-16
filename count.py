@@ -389,16 +389,18 @@ def landeqiming():
                 if i == j:
                     continue
                 if feature_tag[j] == 0:
+                    # 考虑时间相似度
+
                     num = 0
                     for word_cut_array_k in fc.feature_cut_array:
                         similar = calculate_sim_by_cut(word_index_dic, doc_ids,
                                                        word_cut_array_k,
                                                        word_cut_array[j])
-                        if similar > 1.2:
+                        if similar > 1.7:
                             feature_tag[j] = 1
                             fc.append_new_feature_cut(word_cut_array[j])
                             break
-                        if similar > 0.6:
+                        if similar > 0.7:
                             num += 1
                             if float(num) / len(fc.feature_cut_array) > 0.8:
                                 fc.append_new_feature_cut(word_cut_array[j])
@@ -446,7 +448,8 @@ def landeqiming():
                     if i == j:
                         continue
                     if tag[j] == 0:
-                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 1):
+                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.7,
+                                                          similar_word_limit=1):
                             doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
                                                     "".join(fc.feature_cut_array[j]))
                             tag[j] = 1
@@ -511,9 +514,9 @@ def landeqiming():
     # 根据频繁模式热度重新排序并输出
     result = sorted(feature_array, key=lambda x: calculate_hot(doc_ids, x), reverse=True)
     for fc in result:
-        if len(fc.feature_cut_array) > 1:
+        if len(fc.feature_cut_array) > 0:
             print fc, calculate_hot(doc_ids, fc)
+
 
 if __name__ == '__main__':
     landeqiming()
-

@@ -9,7 +9,7 @@ import count
 from datetime import datetime
 
 
-def count_similar(title_arr_list, title_arr_j, limit_info):
+def count_similar(title_arr_list, title_arr_j, limit_info, similar_word_limit = 2):
     """ 利用相同关键词与最大公共子串长度计算事件与新闻的相似度
 
     对事件新闻列表中的每个新闻news_i:
@@ -39,14 +39,14 @@ def count_similar(title_arr_list, title_arr_j, limit_info):
             similarity += info_init.termdir.get(word, 1)
             if word in info_init.flagdir:
                 similarity += info_init.speechdir.get(info_init.flagdir[word], 1)
-        if similar_word_num > 2:
+        if similar_word_num > similar_word_limit:
             news_lcs = tool.lcs("".join(title_arr_i), "".join(title_arr_j))  # 最大相同子串
             similarity *= (1 + len(news_lcs) / max(len(title_arr_i), len(title_arr_j)))
         limit = limit_info + float(min(len(title_arr_i), len(title_arr_j))) / 5
         # print similarity, limit
         if similarity > limit:
             # print similarity, limit
-            # print ".".join(title_arr_i) + "@@@@" + ".".join(title_arr_j)
+            # print "两个新闻标题为" + ".".join(title_arr_i) + "@@@@" + ".".join(title_arr_j) + " " + str(similarity)
             # print title_arr_i, title_arr_j
             similar_news_num += 1
 
@@ -75,10 +75,10 @@ def remove_duplicate():
         if flags[i]:
             flags[i] = 0
             for j in range(len(words)):
-                if i==j:
+                if i == j:
                     continue
                 if flags[j]:
-                    if count_similar([words[i]], words[j], 3):
+                    if count_similar([words[i]], words[j], 6.5, 3):
                         flags[j] = 0
                         filter_set.add(j)
 
@@ -86,11 +86,14 @@ def remove_duplicate():
     result = []
     result_set = set(range(len(words))) - filter_set
     for i in result_set:
-        temp.append(lines[i].split("@@@@")[1].split("##")[0])
-        result.append(lines[i])
+        try:
+            temp.append(lines[i].split("@@@@")[1].split("##")[0])
+            result.append(lines[i])
+        except IndexError:
+            print lines[i]
 
     tool.write_file("./dict/filter_doc.txt", result, "w")
-    tool.write_file("./dict/filter_doc_title.txt",temp,"w")
+    tool.write_file("./dict/filter_doc_title.txt", temp, "w")
 
 
 if __name__ == '__main__':
@@ -103,5 +106,3 @@ if __name__ == '__main__':
     count.get_co_name()
     # 根据频繁模式进行聚类
     count.landeqiming()
-
-
