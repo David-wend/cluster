@@ -61,7 +61,7 @@ class InvertDic:
         :attribute word_term_dic: 词典，存储倒排索引条目信息，eq.{单词编号:[Term1，Term2]}
                                   Term类保存了一个单词在一篇文档中的信息
         :attribute word_df_dic: 词典，记录单词的文档频率，eq.{单词编号:单词文档频率}
-        :attribute doc_dic: 词典，eq.{文档编号:文档标题##文档正文}
+        :attribute doc_dic: 词典，eq.{文档编号:文档类}
         :attribute doc_len: 整数，表示现有文档数量
         :attribute word_num: 整数，表示现有单词数量
         """

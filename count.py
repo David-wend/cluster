@@ -39,6 +39,38 @@ def update_doc_id(doc_id_dic, new_word, old_word):
     return doc_id_dic
 
 
+def calculate_dtw(dictionary, word_a, word_b):
+    """ 利用动态时间规划计算两个序列的相似度
+
+    :param dictionary:
+    :param word_a:
+    :param word_b:
+    :return:
+    """
+    time_dict_a = Counter(calculate_fm_day_info(dictionary, word_a))
+    time_dict_b = Counter(calculate_fm_day_info(dictionary, word_b))
+    time_array_a = []
+    time_array_b = []
+    for i in np.sort(dict.fromkeys([x for x in time_dict_a if x in time_dict_b]).keys()):
+        time_array_a.append(time_dict_a[i])
+        time_array_b.append(time_dict_b[i])
+    dtw_value = tool.get_dtw(time_array_a, time_array_b)
+    return dtw_value
+
+
+def calculate_time_overlapping_rate(dictionary, word_a, word_b):
+    """ 计算两个词的时间分布重合率
+
+    :param dictionary:
+    :param word_a:
+    :param word_b:
+    :return:
+    """
+    time_array_a = calculate_fm_day_info(dictionary, word_a)
+    time_array_b = calculate_fm_day_info(dictionary, word_b)
+    return float(len(set(time_array_a) & set(time_array_b))) / len(set(time_array_a) | set(time_array_b))
+
+
 def calculate_hot(doc_id_dic, freq_mode):
     """ 计算特征热度，计算公式为它所包含的新闻数目平方和的二次方,即sqrt(a**2+b**2)
 
@@ -54,39 +86,39 @@ def calculate_hot(doc_id_dic, freq_mode):
 
 
 def calculate_fm_day_info(dictionary, word):
-    """ 返回频繁模式在出现的时间信息，第一天，出现次数的天数，以及最后一天
+    """ 返回频繁模式在时间分布信息
 
     :param dictionary:
     :param word:
     :return:
     """
     set_i, dict_i = dictionary.transform_term_info(word)
-    time = []
+    time_array = []
     for t in set_i:
         new_datetime = datetime(dictionary.doc_dic[t].time.year, dictionary.doc_dic[t].time.month,
                                 dictionary.doc_dic[t].time.day, 0, 0, 0)
-        time.append(new_datetime)
-    time = np.array(time)
-    return [Counter(time).most_common(1)[0][0], time.min(), time.max()]
+        time_array.append(new_datetime)
+    time_array = np.array(time_array)
+    # return [Counter(time).most_common(1)[0][0], time.min(), time.max()]
+    return np.sort(time_array)
 
 
-def calculate_novelty(dictionary, word):
+def calculate_novelty(dictionary, word, short_period=3, middle_period=7, long_period=30):
     """ 根据频繁模式出现的时间规律，计算新颖度，公式为出现次数的变异系数
 
     :param dictionary:
     :param word:
+    :param short_period:
+    :param middle_period:
+    :param long_period:
     :return:
     """
-    set_i, dict_i = dictionary.transform_term_info(word)
-    time = []
-    for t in set_i:
-        time.append(dictionary.doc_dic[t].time)
-    time = np.sort(np.array(time))
-    max_time = time.max()
-    min_time = time.min()
+    time_array = calculate_fm_day_info(dictionary, word)
+    max_time = time_array.max()
+    min_time = time_array.min()
     delta = max_time - min_time
     arr = np.zeros(abs(delta.days) + 1)
-    for t in time:
+    for t in time_array:
         delta = t - min_time
         arr[delta.days] += 1
     return [arr.std() / arr.mean(), arr.sum()]
@@ -327,12 +359,12 @@ def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_a
     word_j_set = set([])
     for i in word_i_cut_array:
         if i in word_index_dic:
-            if i == u"事件":
+            if i == u"事件" or i == u"中国":
                 continue
             word_i_set = word_i_set | set(doc_ids[i])
     for j in word_j_cut_array:
         if j in word_index_dic:
-            if j == u"事件":
+            if j == u"事件" or i == u"中国":
                 continue
             word_j_set = word_j_set | set(doc_ids[j])
     word_i = "".join(word_i_cut_array)
@@ -358,7 +390,7 @@ def calculate_entropy(doc_ids, doc_word_dic):
     return entropy_value
 
 
-def landeqiming():
+def lan_de_qi_ming():
     # 初始化词典，并读取一阶频繁项集
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
@@ -519,4 +551,4 @@ def landeqiming():
 
 
 if __name__ == '__main__':
-    landeqiming()
+    lan_de_qi_ming()

@@ -52,7 +52,7 @@ class Doc:
 
         :return:
         """
-        para_p = re.compile(ur"\n|\r\n")
+        para_p = re.compile(ur"\n|\r\n| ")
         self.paragraphs = para_p.split(self.doc_string)
 
     def split_sentence(self):

@@ -6,6 +6,7 @@ import random
 import copy
 import time
 
+
 def get_file_lines(path):
     """读取文件中所有的函数
 
@@ -32,6 +33,19 @@ def get_speech_dic():
         i = i.split('\t', 2)
         speech_dic[i[0]] = float(i[1])
     return speech_dic
+
+
+def get_dtw(arr_a, arr_b):
+    len_a = len(arr_a)
+    len_b = len(arr_b)
+    dis = np.zeros((len_a, len_b))
+    dtw = np.zeros((len_a + 1, len_b + 1))
+    for i in np.arange(len_a) + 1:
+        for j in np.arange(len_b) + 1:
+            if i != 0 and j != 0:
+                dis[i - 1][j - 1] = abs(arr_a[i - 1] - arr_b[j - 1])
+                dtw[i][j] = min(dtw[i - 1][j], dtw[i][j - 1], dtw[i - 1][j - 1]) + dis[i - 1][j - 1]
+    return dtw[-1, -1]
 
 
 def lcs(strA, strB):
