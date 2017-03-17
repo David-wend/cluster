@@ -160,6 +160,18 @@ def insert_topic_keyword_relative():
     # sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
 
 
+def add_new_word(dictionary, word):
+    for i in range(len(word) - 1):
+        for j in range(len(word) - i - 1):
+            # print word[j:i + j + 1], word[j + 1:j + i + 2]
+            i_dic.add_new_term(word[j:i + j + 1], word[j + 1:j + i + 2])
+    return dictionary
+
+
+def p(arr):
+    return [round(x, 1) for x in arr]
+
+
 if __name__ == '__main__':
     # insert_topic_keyword_relative()
     # i_dic = Inverted_index.InvertDic()
@@ -174,8 +186,28 @@ if __name__ == '__main__':
     i_dic = Inverted_index.InvertDic()
     i_dic.init_all_dic()
     words, freq, values, doc_ids, word_index_dic = count.load_data()
-    print count.calculate_dtw(i_dic, u"两", u"政")
+    add_new_word(i_dic, u"人大代表")
+    add_new_word(i_dic, u"两会")
+    add_new_word(i_dic, u"政协")
+    add_new_word(i_dic, u"新闻")
+    add_new_word(i_dic, u"事件")
+    print p(count.calculate_novelty(i_dic, u"人大代表"))
+    print p(count.calculate_novelty(i_dic, u"两会"))
+    print p(count.calculate_novelty(i_dic, u"政协"))
+    print p(count.calculate_novelty(i_dic, u"新闻"))
+    print p(count.calculate_novelty(i_dic, u"事件"))
 
+
+    # print i_dic.word_index_dic[u"美联储官员"], i_dic.word_index_dic[u"李克强回应"]
+    # print count.calculate_dtw(i_dic, u"美联储官员", u"李克强回应"), count.calculate_time_overlapping_rate(i_dic, u"美联储官员", u"李克强回应")
+    # print count.calculate_dtw(i_dic, u"人大", u"政协"), count.calculate_time_overlapping_rate(i_dic, u"人大", u"政协")
+    # print count.calculate_dtw(i_dic, u"两会", u"政协"), count.calculate_time_overlapping_rate(i_dic, u"两会", u"政协")
+
+    a = [1, 2, 3]
+    print np.sort(a)
+    # b = [2, 3, 4]
+    # print float(len(set(a) & set(b))) / len(set(a) | set(b))
+    # print tool.get_dtw(a, [100+x for x in a])
 
 # select news_datetime from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_datetime != "0000-00-00 00:00:00" order by news_datetime asc limit 1
 # select topic_datetime from yunshan_topic where topic_id in (select topic_id from yunshan_event_topic_relative where event_id = 2) and topic_datetime != "0000-00-00 00:00:00" order by topic_datetime asc limit 1

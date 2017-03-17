@@ -45,7 +45,8 @@ def get_dtw(arr_a, arr_b):
             if i != 0 and j != 0:
                 dis[i - 1][j - 1] = abs(arr_a[i - 1] - arr_b[j - 1])
                 dtw[i][j] = min(dtw[i - 1][j], dtw[i][j - 1], dtw[i - 1][j - 1]) + dis[i - 1][j - 1]
-    return dtw[-1, -1]
+
+    return dtw[-1, -1] / max(1, abs(np.mean(arr_a) - np.mean(arr_b)))
 
 
 def lcs(strA, strB):
@@ -93,7 +94,7 @@ def lcs(strA, strB):
 
 
 def get_stop_word():
-    stop_word=set([])
+    stop_word = set([])
     for line in get_file_lines('./dict/stopwords.txt'):
         stop_word.add(line.decode("utf-8"))
     return stop_word
@@ -166,6 +167,7 @@ def exe_time(func):
         print "-----------------------------------"
         sys.stdout.write('\033[0m')
         return res
+
     return wrapper
 
 

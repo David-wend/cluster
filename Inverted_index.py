@@ -66,6 +66,8 @@ class InvertDic:
         :attribute word_num: 整数，表示现有单词数量
         """
 
+        self.word_first_time_dic = {}
+        self.word_last_time_dic = {}
         self.index_word_dic = {}
         self.word_comb_word_dic = {}
         self.word_index_dic = {}

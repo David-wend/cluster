@@ -15,4 +15,4 @@ if __name__ == '__main__':
     # 挖掘频繁项集
     count.get_co_name()
     # 根据频繁模式进行聚类
-    count.landeqiming()
+    count.lan_de_qi_ming()
