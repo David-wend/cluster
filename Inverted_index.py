@@ -1,11 +1,13 @@
 # coding=utf-8
 
-__author__ = 'david'
 from datetime import datetime
 import doc_proccess
 import tool
+import numpy as np
+from collections import Counter
 
 time_format = "%Y-%m-%d %H:%M:%S"
+__author__ = 'david'
 
 
 class Term:
@@ -54,6 +56,7 @@ class InvertDic:
     def __init__(self):
         """
 
+        :attribute word_time_dic: 词典，记录单词的时间信息，eq.{单词编号:[时间序列]}
         :attribute word_comb_word_dic: 词典，记录单词的组合形式，eq.{组合词编号:[单词1编号，单词2编号]}
         :attribute index_word_dic: 词典，记录单词编号，eq.{单词编号:单词}
         :attribute word_index_dic: 词典，记录单词编号，eq.{单词:单词编号}
@@ -66,8 +69,7 @@ class InvertDic:
         :attribute word_num: 整数，表示现有单词数量
         """
 
-        self.word_first_time_dic = {}
-        self.word_last_time_dic = {}
+        self.word_time_dic = {}
         self.index_word_dic = {}
         self.word_comb_word_dic = {}
         self.word_index_dic = {}
@@ -76,8 +78,8 @@ class InvertDic:
         self.word_df_dic = {}
         self.doc_dic = {}
         self.doc_len = doc_proccess.Doc.get_lasted_doc_id() + 1
-        self.word_num = 0
         # self.init_all_dic()
+        self.word_num = len(self.word_index_dic)
 
     def init_all_dic(self):
         self.get_doc_dic()
@@ -168,15 +170,14 @@ class InvertDic:
         :param doc: Doc类
         :return:
         """
-        word_id = len(self.word_index_dic)
         self.doc_len += 1
         n_set = set()
         for word in doc.words:
             if word not in self.word_index_dic:
-                self.word_index_dic[word] = word_id
-                self.word_comb_word_dic[word_id] = [word_id]
+                self.word_index_dic[word] = self.word_num
+                self.word_comb_word_dic[self.word_num] = [self.word_num]
                 self.word_freq_dic[self.word_index_dic[word]] = 1
-                word_id += 1
+                self.word_num += 1
             else:
                 self.word_freq_dic[self.word_index_dic[word]] += 1
             if word not in n_set:
@@ -248,6 +249,7 @@ class InvertDic:
         else:
             # print "待组合词长度不同"
             return False
+        # 考虑时间约束
         return True
 
     def add_new_term(self, word_i, word_j):
@@ -270,6 +272,7 @@ class InvertDic:
                 t = Term(word_k_id, doc_ids[i], len(doc_locations[i]))
                 t.append_location(doc_locations[i])
                 self.word_term_dic[word_k_id] = self.word_term_dic.get(word_k_id, []) + [t]
+            self.word_time_dic[word_k_id] = self.calculate_fm_day_info(word_k)
         else:
             print "不满足规范"
 
@@ -286,6 +289,55 @@ class InvertDic:
             word_set.add(i_term.doc_id)
             word_dic[i_term.doc_id] = i_term
         return word_set, word_dic
+
+    def calculate_fm_day_info(self, word):
+        """ 升序返回频繁模式在时间分布信息
+
+        :param word:
+        :return:
+        """
+        if self.word_index_dic[word] in self.word_time_dic:
+            return self.word_time_dic[self.word_index_dic[word]]
+        else:
+            set_i, dict_i = self.transform_term_info(word)
+            time_array = []
+            for t in set_i:
+                new_datetime = datetime(self.doc_dic[t].time.year, self.doc_dic[t].time.month,
+                                        self.doc_dic[t].time.day, 0, 0)
+                time_array.append(new_datetime)
+            time_array = np.array(time_array)
+            self.word_time_dic[self.word_index_dic[word]] = time_array
+            return np.sort(time_array)
+
+    def calculate_time_overlapping_rate(self, word_a, word_b):
+        """ 计算两个词的时间分布重合率
+
+        :param word_a:
+        :param word_b:
+        :return:
+        """
+        time_array_a = self.word_time_dic[self.word_index_dic[word_a]]
+        time_array_b = self.word_time_dic[self.word_index_dic[word_b]]
+        return float(len(set(time_array_a) & set(time_array_b))) / len(set(time_array_a) | set(time_array_b))
+
+    def calculate_dtw(self, word_a, word_b):
+        """ 利用动态时间规划计算两个序列的相似度
+
+        :param word_a:
+        :param word_b:
+        :return:
+        """
+        time_dict_a = Counter(self.word_time_dic[self.word_index_dic[word_a]])
+        time_dict_b = Counter(self.word_time_dic[self.word_index_dic[word_b]])
+        time_array_a = []
+        time_array_b = []
+        for i in np.sort(dict.fromkeys([x for x in time_dict_a if x in time_dict_b]).keys()):
+            time_array_a.append(time_dict_a[i])
+            time_array_b.append(time_dict_b[i])
+        if len(time_array_a) == 0 or len(time_array_a) == 0:
+            return 20
+        dtw_value = tool.get_dtw(time_array_a, time_array_a)
+        return dtw_value
 
 
 if __name__ == '__main__':

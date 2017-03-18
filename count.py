@@ -47,8 +47,8 @@ def calculate_dtw(dictionary, word_a, word_b):
     :param word_b:
     :return:
     """
-    time_dict_a = Counter(calculate_fm_day_info(dictionary, word_a))
-    time_dict_b = Counter(calculate_fm_day_info(dictionary, word_b))
+    time_dict_a = Counter(dictionary.calculate_fm_day_info(word_a))
+    time_dict_b = Counter(dictionary.calculate_fm_day_info(word_b))
     time_array_a = []
     time_array_b = []
     for i in np.sort(dict.fromkeys([x for x in time_dict_a if x in time_dict_b]).keys()):
@@ -69,9 +69,9 @@ def calculate_time_overlapping_rate(dictionary, word_a, word_b):
     :param word_b:
     :return:
     """
-    time_array_a = calculate_fm_day_info(dictionary, word_a)
-    time_array_b = calculate_fm_day_info(dictionary, word_b)
-    print len(time_array_a), len(time_array_b),
+    time_array_a = dictionary.calculate_fm_day_info(word_a)
+    time_array_b = dictionary.calculate_fm_day_info(word_b)
+    # print len(time_array_a), len(time_array_b),
     return float(len(set(time_array_a) & set(time_array_b))) / len(set(time_array_a) | set(time_array_b))
 
 
@@ -89,24 +89,6 @@ def calculate_hot(doc_id_dic, freq_mode):
     return np.sqrt(hot_value)
 
 
-def calculate_fm_day_info(dictionary, word):
-    """ 返回频繁模式在时间分布信息
-
-    :param dictionary:
-    :param word:
-    :return:
-    """
-    set_i, dict_i = dictionary.transform_term_info(word)
-    time_array = []
-    for t in set_i:
-        new_datetime = datetime(dictionary.doc_dic[t].time.year, dictionary.doc_dic[t].time.month,
-                                dictionary.doc_dic[t].time.day, 0, 0)
-        time_array.append(new_datetime)
-    time_array = np.array(time_array)
-    # return [Counter(time).most_common(1)[0][0], time.min(), time.max()]
-    return np.sort(time_array)
-
-
 def calculate_novelty(dictionary, word, short_period=7, middle_period=14, long_period=30):
     """ 根据频繁模式出现的时间规律，计算新颖度，公式为出现次数的变异系数
 
@@ -117,7 +99,7 @@ def calculate_novelty(dictionary, word, short_period=7, middle_period=14, long_p
     :param long_period:
     :return:
     """
-    time_array = calculate_fm_day_info(dictionary, word)
+    time_array = dictionary.calculate_fm_day_info(word)
     time_dict_array = sorted(Counter(time_array).items(), key=lambda x: x[0], reverse=True)
     max_time = time_dict_array[0][0]
     max_time_num = time_dict_array[0][1]
@@ -135,9 +117,6 @@ def calculate_novelty(dictionary, word, short_period=7, middle_period=14, long_p
             middle_arr[delta.days] += 1
         if delta.days < long_period:
             long_arr[delta.days] += 1
-    print short_arr, middle_arr, long_arr
-    # return [short_arr.std() / short_arr.mean(), middle_arr.std() / middle_arr.mean(), long_arr.std() / long_arr.mean(),
-    #         long_arr.sum()]
 
     return [short_arr.mean() / middle_arr.mean(), middle_arr.mean() / long_arr.mean(),
             short_arr.mean() / long_arr.mean(), short_arr.std() / short_arr.mean(),

@@ -144,7 +144,6 @@ def pseg_word(rows):
             word_num_arr.append([new_datetime, word_fillter, len(word_fillter)])
         except AttributeError:
             continue
-        print len(word_num_arr)
     return np.array(word_num_arr), count, word_2_tag, tag_2_flag, tag_2_word, all_word_num
 
 
@@ -154,14 +153,15 @@ def count_weight(s_file_path, t_file_path):
     with open(s_file_path) as ifile:
         for line in ifile:
             arr = line.split('\t', 13)
-            count = int(arr[8])
+            count = math.ceil(float(arr[8]))
             temp_weight = abs(count - fre_limit)
             if temp_weight == 0:
                 temp_weight = 1
             if count > 12:
-                weight = (float(arr[6]) * float(arr[11])) / (float(arr[7]) * float(arr[12])) - math.log(temp_weight, 2)
+                weight = (float(arr[6]) * float(arr[12])) / (float(arr[7]) * float(arr[11])) - 2 * math.log(temp_weight,
+                                                                                                            2)
             else:
-                weight = ((float(arr[6]) * float(arr[11])) / (float(arr[7]) * float(arr[12])) - math.log(temp_weight,
+                weight = ((float(arr[6]) * float(arr[12])) / (float(arr[7]) * float(arr[11])) - math.log(temp_weight,
                                                                                                          2)) / 2
             all_arr.append([arr[0], arr[2], float(weight), int(arr[8])])  # name flag weight count
 
@@ -181,25 +181,25 @@ def count_weight(s_file_path, t_file_path):
 
 
 if __name__ == '__main__':
-    term_list = []
-    sql = 'select * from news where news_datetime is not null limit 170000, 50000  '
-    rows = sql_tool.select(sql)
-    rows, count, word_2_tag, tag_2_flag, tag_2_word, all_word_num = pseg_word(rows)
-    rows = DataFrame(rows, columns=['time', 'num_str', 'lenth']).sort_values(by='time')
-    rows = np.array(rows)
-
-    for i in np.arange(len(tag_2_word)):
-        for j in np.arange(0, len(rows)):
-            if rows[j][2] > 0 and i in rows[j][1]:
-                rows[j][2] -= 1
-                count_num = count[tag_2_word[i]]
-                temp_term = term(tag_2_word[i], i, tag_2_flag[i], rows[j][0], count_num, count_num / all_word_num)
-                temp_term.statistics(rows[j:, :])
-                term_list.append(temp_term)
-                break
-
-    outline = []
-    for term in term_list:
-        outline.append(term.printInfo())
-        sl_tool.write_file('./dict/term.txt', outline)
+    # term_list = []
+    # sql = 'select * from news where news_datetime is not null limit 200000  '
+    # rows = sql_tool.select(sql)
+    # rows, count, word_2_tag, tag_2_flag, tag_2_word, all_word_num = pseg_word(rows)
+    # rows = DataFrame(rows, columns=['time', 'num_str', 'lenth']).sort_values(by='time')
+    # rows = np.array(rows)
+    #
+    # for i in np.arange(len(tag_2_word)):
+    #     for j in np.arange(0, len(rows)):
+    #         if rows[j][2] > 0 and i in rows[j][1]:
+    #             rows[j][2] -= 1
+    #             count_num = count[tag_2_word[i]]
+    #             temp_term = term(tag_2_word[i], i, tag_2_flag[i], rows[j][0], count_num, count_num / all_word_num)
+    #             temp_term.statistics(rows[j:, :])
+    #             term_list.append(temp_term)
+    #             break
+    #
+    # outline = []
+    # for term in term_list:
+    #     outline.append(term.printInfo())
+    #     sl_tool.write_file('./dict/term.txt', outline)
     count_weight('./dict/term.txt', './dict/weight.txt')
