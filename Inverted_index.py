@@ -56,6 +56,7 @@ class InvertDic:
     def __init__(self):
         """
 
+        :attribute word_hot_weight_dic: 词典，记录单词的热度信息，eq.{单词:热度}
         :attribute word_time_dic: 词典，记录单词的时间信息，eq.{单词编号:[时间序列]}
         :attribute word_comb_word_dic: 词典，记录单词的组合形式，eq.{组合词编号:[单词1编号，单词2编号]}
         :attribute index_word_dic: 词典，记录单词编号，eq.{单词编号:单词}
@@ -69,6 +70,7 @@ class InvertDic:
         :attribute word_num: 整数，表示现有单词数量
         """
 
+        self.word_hot_weight_dic = {}
         self.word_time_dic = {}
         self.index_word_dic = {}
         self.word_comb_word_dic = {}
@@ -80,6 +82,7 @@ class InvertDic:
         self.doc_len = doc_proccess.Doc.get_lasted_doc_id() + 1
         # self.init_all_dic()
         self.word_num = len(self.word_index_dic)
+        self.get_word_hot_weight_dic()
 
     def init_all_dic(self):
         self.get_doc_dic()
@@ -154,6 +157,13 @@ class InvertDic:
             t = Term(int(temp[0]), int(temp[1]), int(temp[2]))
             t.append_location([int(x) for x in temp[3].split("##")])
             self.word_term_dic[int(temp[0])] = self.word_term_dic.get(int(temp[0]), []) + [t]
+
+    def get_word_hot_weight_dic(self):
+        lines = tool.get_file_lines("./dict/weight.txt")
+        for line in lines:
+            temp = line.split("\t")
+
+            self.word_hot_weight_dic[temp[0].decode("utf-8")] = float(temp[-1])
 
     def update_df_dic(self, words):
         """ 更新文档频率
@@ -309,6 +319,28 @@ class InvertDic:
             self.word_time_dic[self.word_index_dic[word]] = time_array
             return np.sort(time_array)
 
+    def calculate_time_area_overlapping_rate(self, word_a, word_b):
+        """ 计算两个词的时间区间分布重合率
+
+        :param word_a:
+        :param word_b:
+        :return:
+        """
+        time_array_a = self.calculate_fm_day_info(word_a)
+        time_array_b = self.calculate_fm_day_info(word_b)
+        max_time_a = time_array_a[-1]
+        min_time_a = time_array_a[0]
+        max_time_b = time_array_b[-1]
+        min_time_b = time_array_b[0]
+        if max_time_b > max_time_a:
+            denominator = max_time_b - min_time_a
+            numerator = max_time_a - min_time_b
+            return float(numerator.days) / denominator.days
+        else:
+            denominator = max_time_a - min_time_b
+            numerator = max_time_b - min_time_a
+            return float(numerator.days) / denominator.days
+
     def calculate_time_overlapping_rate(self, word_a, word_b):
         """ 计算两个词的时间分布重合率
 
@@ -316,8 +348,8 @@ class InvertDic:
         :param word_b:
         :return:
         """
-        time_array_a = self.word_time_dic[self.word_index_dic[word_a]]
-        time_array_b = self.word_time_dic[self.word_index_dic[word_b]]
+        time_array_a = self.calculate_fm_day_info(word_a)
+        time_array_b = self.calculate_fm_day_info(word_b)
         return float(len(set(time_array_a) & set(time_array_b))) / len(set(time_array_a) | set(time_array_b))
 
     def calculate_dtw(self, word_a, word_b):

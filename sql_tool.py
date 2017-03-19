@@ -39,7 +39,6 @@ def save_many_into_mysql(conn, cursor, sql, temp):
         cursor.executemany(sql, temp)
         conn.commit()
     except MySQLdb.Error, e:
-        print sql
         try:
             sql_error = "Error y%d:%s" % (e.args[0], e.args[1])
             print sql_error

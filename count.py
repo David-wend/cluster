@@ -364,7 +364,7 @@ def calculate_sim_by_cut(word_index_dic, doc_ids, word_i_cut_array, word_j_cut_a
             word_i_set = word_i_set | set(doc_ids[i])
     for j in word_j_cut_array:
         if j in word_index_dic:
-            if j == u"事件" or i == u"中国":
+            if j == u"事件" or j == u"中国":
                 continue
             word_j_set = word_j_set | set(doc_ids[j])
     word_i = "".join(word_i_cut_array)
@@ -390,6 +390,22 @@ def calculate_entropy(doc_ids, doc_word_dic):
     return entropy_value
 
 
+def calculate_sim_by_hot(dictionary, word_i_cut_array, word_j_cut_array):
+    hot_value = 1
+    for i in set(word_i_cut_array) & set(word_j_cut_array):
+        if i in dictionary.word_hot_weight_dic:
+            hot_value += dictionary.word_hot_weight_dic[i]
+    return hot_value
+
+
+def add_new_word(dictionary, word):
+    for i in range(len(word) - 1):
+        for j in range(len(word) - i - 1):
+            # print word[j:i + j + 1], word[j + 1:j + i + 2]
+            dictionary.add_new_term(word[j:i + j + 1], word[j + 1:j + i + 2])
+    return dictionary
+
+
 def lan_de_qi_ming():
     # 初始化词典，并读取一阶频繁项集
     i_dic = Inverted_index.InvertDic()
@@ -403,6 +419,7 @@ def lan_de_qi_ming():
     word_cut_array = []
     # for word in words:
     for word in word_name:
+        add_new_word(i_dic, word)
         if len(word) > 2:
             word_cut_array.append([x for x in jieba.cut(word)])
         else:
@@ -428,20 +445,26 @@ def lan_de_qi_ming():
                         similar = calculate_sim_by_cut(word_index_dic, doc_ids,
                                                        word_cut_array_k,
                                                        word_cut_array[j])
+                        # hs = calculate_sim_by_hot(i_dic, word_cut_array_k, word_cut_array[j])
+                        ol = (1 + i_dic.calculate_time_overlapping_rate("".join(word_cut_array_k),
+                                                                        "".join(word_cut_array[j])))
+                        # if u"政协" in "".join(word_cut_array_k):
+                        #     print "".join(word_cut_array_k), "".join(word_cut_array[j]), hs,  ol
+                        similar *= ol
                         if similar > 1.7:
                             feature_tag[j] = 1
                             fc.append_new_feature_cut(word_cut_array[j])
                             break
-                        if similar > 0.7:
+                        if similar > 0.85:
                             num += 1
-                            if float(num) / len(fc.feature_cut_array) > 0.8:
+                            if float(num) / len(fc.feature_cut_array) > 0.75:
                                 fc.append_new_feature_cut(word_cut_array[j])
                                 feature_tag[j] = 1
                                 break
 
     # 话题去重
     for fc in feature_array:
-        print fc, calculate_hot(doc_ids, fc)
+        # print fc, calculate_hot(doc_ids, fc)
 
         # 根据上下位去重，如有“林丹出轨”去除“林丹出”
         new_feature_cut_array = []
@@ -487,7 +510,7 @@ def lan_de_qi_ming():
                             tag[j] = 1
 
         fc.feature_cut_array = new_feature_cut_array
-        print fc
+        # print fc
 
     # 将特征文档空间模型转换为文档特征空间模型
     doc_word_dic = {}
@@ -527,9 +550,9 @@ def lan_de_qi_ming():
     # 输出频繁模式及相关文档
     temp = []
     for item in news_relative.items():
-        print item[0], item[1]
+        # print item[0], item[1]
         for doc_id in item[1]:
-            print "\t" + doc_dic[doc_id]
+            # print "\t" + doc_dic[doc_id]
             temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id))
     tool.write_file("./dict/topic_news_relative.txt", temp, "w")
 
