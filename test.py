@@ -270,10 +270,11 @@ if __name__ == '__main__':
     # insert_key_word()
     # update_topic_datetime()
     # update_event_datetime()
-    insert_comment()
+    # insert_comment()
 
-    pass
-
+    d = datetime.now()
+    print d
+    print type(d.day)
     # create_news_doc.insert_doc_from_mongodb()
     # create_news_doc.connect_mongodb()
 

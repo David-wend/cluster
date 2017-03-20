@@ -371,6 +371,15 @@ class InvertDic:
         dtw_value = tool.get_dtw(time_array_a, time_array_a)
         return dtw_value
 
+    def cluster_time_bound(self, word_a, word_array):
+        time_array_a = self.calculate_fm_day_info(word_a)
+        for word_b in word_array:
+            time_array_b = self.calculate_fm_day_info(word_b)
+
+    def get_time_array_relative(self, time_array_a, time_array_b, day_delta):
+        if time_array_a[0]<time_array_b[0]:
+            # if time_array_a[-1]
+            pass
 
 if __name__ == '__main__':
     # 初始化词典
