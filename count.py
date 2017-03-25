@@ -431,7 +431,7 @@ def lan_de_qi_ming():
     distance = np.zeros(shape=(len(word_cut_array), len(word_cut_array)))
     for i in range(len(word_cut_array) - 1):
         if feature_tag[i] == 0:
-            feature_tag[i] = 1
+            feature_tag[i] =   1
             fc = FeatureCluster(word_cut_array[i])
             feature_array.append(fc)
             for j in range(i + 1, len(word_cut_array)):
@@ -439,7 +439,6 @@ def lan_de_qi_ming():
                     continue
                 if feature_tag[j] == 0:
                     # 考虑时间相似度
-
                     num = 0
                     for word_cut_array_k in fc.feature_cut_array:
                         similar = calculate_sim_by_cut(word_index_dic, doc_ids,
@@ -487,7 +486,7 @@ def lan_de_qi_ming():
                     doc_ids = update_doc_id(doc_ids, word, word[1:])
                     del result[word[1:]]
         fc.feature_cut_array = new_feature_cut_array
-        print fc
+        # print fc
 
         # 根据语义去重
         new_feature_cut_array = []
@@ -556,14 +555,15 @@ def lan_de_qi_ming():
             temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id))
     tool.write_file("./dict/topic_news_relative.txt", temp, "w")
 
-    # temp = []
-    # num = 2
-    # for fc in feature_array[:3]:
-    #     for feature_cut_array_k in fc.feature_cut_array:
-    #         word_name = "".join(feature_cut_array_k)
-    #         temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
-    #     num += 1
-    # tool.write_file("./dict/event_topic_relative.txt", temp, "w")
+    # 保存文档与事件的联系
+    temp = []
+    num = 2
+    for fc in feature_array[:3]:
+        for feature_cut_array_k in fc.feature_cut_array:
+            word_name = "".join(feature_cut_array_k)
+            temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
+        num += 1
+    tool.write_file("./dict/event_topic_relative.txt", temp, "w")
 
     print "输出结果如下"
     # 根据频繁模式热度重新排序并输出

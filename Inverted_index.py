@@ -284,7 +284,8 @@ class InvertDic:
                 self.word_term_dic[word_k_id] = self.word_term_dic.get(word_k_id, []) + [t]
             self.word_time_dic[word_k_id] = self.calculate_fm_day_info(word_k)
         else:
-            print "不满足规范"
+            pass
+            # print "不满足规范"
 
     def transform_term_info(self, word):
         """ 将单词倒排索引信息转换为集合和字典
@@ -371,15 +372,24 @@ class InvertDic:
         dtw_value = tool.get_dtw(time_array_a, time_array_a)
         return dtw_value
 
-    def cluster_time_bound(self, word_a, word_array):
+    def cluster_time_bound(self, word_a, word_array, day_delta_value):
         time_array_a = self.calculate_fm_day_info(word_a)
         for word_b in word_array:
             time_array_b = self.calculate_fm_day_info(word_b)
+            if time_array_a[0] < time_array_b[0]:
+                if self.get_time_array_relative(time_array_a, time_array_b, day_delta_value):
+                    return True
+            else:
+                if self.get_time_array_relative(time_array_b, time_array_a, day_delta_value):
+                    return True
+        return False
 
-    def get_time_array_relative(self, time_array_a, time_array_b, day_delta):
-        if time_array_a[0]<time_array_b[0]:
-            # if time_array_a[-1]
-            pass
+    @staticmethod
+    def get_time_array_relative(time_array_c, time_array_d, day_delta_value):
+        time_delta = time_array_d[0]-time_array_c[-1]
+        if time_delta.day < day_delta_value:
+            return True
+
 
 if __name__ == '__main__':
     # 初始化词典

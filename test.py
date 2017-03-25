@@ -282,7 +282,7 @@ if __name__ == '__main__':
     # i_dic.init_all_dic()
     # words, freq, values, doc_ids, word_index_dic = count.load_data()
     # add_new_word(i_dic, u"人大代表")
-    print p(count.calculate_novelty(i_dic, u"人大代表"))
+    # print p(count.calculate_novelty(i_dic, u"人大代表"))
     # print i_dic.word_index_dic[u"美联储官员"], i_dic.word_index_dic[u"李克强回应"]
 
     # select news_datetime from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_datetime != "0000-00-00 00:00:00" order by news_datetime asc limit 1
