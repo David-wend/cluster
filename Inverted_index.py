@@ -387,8 +387,10 @@ class InvertDic:
     @staticmethod
     def get_time_array_relative(time_array_c, time_array_d, day_delta_value):
         time_delta = time_array_d[0]-time_array_c[-1]
-        if time_delta.day < day_delta_value:
+        if time_delta.days < day_delta_value:
             return True
+        else:
+            return False
 
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ def insert_doc_from_mongodb():
 
 def insert_doc_from_db(data):
     i = Inverted_index.InvertDic()
-    tool.write_file("./dict/doc.txt", [], "w")
+    # tool.write_file("./dict/doc.txt", [], "w")
     for row in data:
         news_id = row[0]
         title = row[1]
@@ -56,6 +56,7 @@ def insert_doc_from_db(data):
 
 def transform_doc():
     i = Inverted_index.InvertDic()
+    i.init_all_dic()
     doc_rows = tool.get_file_lines("./dict/filter_doc.txt")
     for row in doc_rows:
         try:
@@ -83,7 +84,7 @@ if __name__ == '__main__':
     news_type = '数码'
 
     sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
-          " news_datetime > '2016-03-01 00:00:00' and `news_datetime` < '2016-04-01 00:00:00' order by 'news_datetime' " \
+          " news_datetime > '2016-01-01 00:00:00' and `news_datetime` < '2016-05-01 00:00:00' order by 'news_datetime' " \
           "asc "
     news_rows = sql_tool.select(sql)
     print len(news_rows)

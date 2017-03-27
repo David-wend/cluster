@@ -13,6 +13,6 @@ if __name__ == '__main__':
     # 根据去重后的标题，重新生成词典
     create_news_doc.transform_doc()
     # 挖掘频繁项集
-    count.get_co_name()
+    # count.get_co_name()
     # 根据频繁模式进行聚类
-    count.lan_de_qi_ming()
+    # count.lan_de_qi_ming()

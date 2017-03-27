@@ -431,7 +431,7 @@ def lan_de_qi_ming():
     distance = np.zeros(shape=(len(word_cut_array), len(word_cut_array)))
     for i in range(len(word_cut_array) - 1):
         if feature_tag[i] == 0:
-            feature_tag[i] =   1
+            feature_tag[i] = 1
             fc = FeatureCluster(word_cut_array[i])
             feature_array.append(fc)
             for j in range(i + 1, len(word_cut_array)):
@@ -439,27 +439,29 @@ def lan_de_qi_ming():
                     continue
                 if feature_tag[j] == 0:
                     # 考虑时间相似度
-                    num = 0
-                    for word_cut_array_k in fc.feature_cut_array:
-                        similar = calculate_sim_by_cut(word_index_dic, doc_ids,
-                                                       word_cut_array_k,
-                                                       word_cut_array[j])
-                        # hs = calculate_sim_by_hot(i_dic, word_cut_array_k, word_cut_array[j])
-                        ol = (1 + i_dic.calculate_time_overlapping_rate("".join(word_cut_array_k),
-                                                                        "".join(word_cut_array[j])))
-                        # if u"政协" in "".join(word_cut_array_k):
-                        #     print "".join(word_cut_array_k), "".join(word_cut_array[j]), hs,  ol
-                        similar *= ol
-                        if similar > 1.7:
-                            feature_tag[j] = 1
-                            fc.append_new_feature_cut(word_cut_array[j])
-                            break
-                        if similar > 0.85:
-                            num += 1
-                            if float(num) / len(fc.feature_cut_array) > 0.75:
-                                fc.append_new_feature_cut(word_cut_array[j])
+                    if i_dic.cluster_time_bound("".join(word_cut_array[j]), ["".join(x) for x in fc.feature_cut_array],
+                                                0):
+                        num = 0
+                        for word_cut_array_k in fc.feature_cut_array:
+                            similar = calculate_sim_by_cut(word_index_dic, doc_ids,
+                                                           word_cut_array_k,
+                                                           word_cut_array[j])
+                            # hs = calculate_sim_by_hot(i_dic, word_cut_array_k, word_cut_array[j])
+                            ol = (1 + i_dic.calculate_time_overlapping_rate("".join(word_cut_array_k),
+                                                                            "".join(word_cut_array[j])))
+                            # if u"政协" in "".join(word_cut_array_k):
+                            #     print "".join(word_cut_array_k), "".join(word_cut_array[j]), hs,  ol
+                            similar *= ol
+                            if similar > 1.7:
                                 feature_tag[j] = 1
+                                fc.append_new_feature_cut(word_cut_array[j])
                                 break
+                            if similar > 0.85:
+                                num += 1
+                                if float(num) / len(fc.feature_cut_array) > 0.75:
+                                    fc.append_new_feature_cut(word_cut_array[j])
+                                    feature_tag[j] = 1
+                                    break
 
     # 话题去重
     for fc in feature_array:
@@ -572,6 +574,7 @@ def lan_de_qi_ming():
         if len(fc.feature_cut_array) > 0:
             print fc, calculate_hot(doc_ids, fc)
 
+    print len(feature_array)
 
 if __name__ == '__main__':
     lan_de_qi_ming()
