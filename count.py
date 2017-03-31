@@ -223,6 +223,14 @@ def get_co_name():
         result_list = sorted(result_dic.items(), key=lambda x: x[1])
         # 保存所有频繁模式的信息
         lines = []
+
+        try:
+            del result_dic[u"新闻"]
+            del result_dic[u"搜狐"]
+            del result_dic[u"腾讯"]
+        except:
+            pass
+
         for temp in result_list:
             # try:
             lines.append(temp[0] + "@@" + str(temp[1]) + "@@" + str(
@@ -236,12 +244,7 @@ def get_co_name():
             #     print temp[0]
             #     continue
         tool.write_file("./dict/word_co.txt", lines, "a")
-        try:
-            del result_dic[u"新闻"]
-            del result_dic[u"搜狐"]
-            del result_dic[u"腾讯"]
-        except:
-            pass
+
         candidate_list = result_dic.keys()
 
 
@@ -307,7 +310,7 @@ def remove_non_sense_word(words, freq, values):
     # candidate_remove = {}
     for w_i in words:
         if freq[w_i] > 2:
-            if values[w_i][0] > 0.7 and values[w_i][1] > 0.52 and values[w_i][2] > 0.6:
+            if values[w_i][0] > 0.7 and values[w_i][1] > 0.55 and values[w_i][2] > 0.7:
                 result[w_i] = calculate_total_weight(freq[w_i], values[w_i])
             elif len(w_i) > 3 and freq[w_i] > 12 and values[w_i][0] > 0.45 and values[w_i][1] > 0.45 and values[w_i][
                 2] > 0.7:
@@ -440,7 +443,7 @@ def lan_de_qi_ming():
                 if feature_tag[j] == 0:
                     # 考虑时间相似度
                     if i_dic.cluster_time_bound("".join(word_cut_array[j]), ["".join(x) for x in fc.feature_cut_array],
-                                                0):
+                                                10):
                         num = 0
                         for word_cut_array_k in fc.feature_cut_array:
                             similar = calculate_sim_by_cut(word_index_dic, doc_ids,

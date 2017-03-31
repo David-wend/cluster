@@ -174,10 +174,11 @@ class InvertDic:
         for word in set(words):
             self.word_df_dic[self.word_index_dic[word]] = self.word_df_dic.get(self.word_index_dic[word], 0) + 1
 
-    def update_invert_index(self, doc):
+    def update_invert_index(self, doc, flag=1):
         """ 更新倒排索引词典，可以将新的文章添加到倒排索引词典内
 
         :param doc: Doc类
+        :param flag: flag = {0, 1} flag为1是doc信息写入文档
         :return:
         """
         self.doc_len += 1
@@ -198,7 +199,8 @@ class InvertDic:
                                                                                        []) + [t]
         self.update_df_dic(doc.words)
         self.doc_dic[doc.doc_id] = doc
-        tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
+        if flag == 1:
+            tool.write_file("./dict/doc.txt", [doc.__str__()], "a")
 
     def get_co_occurrence_info(self, word_i, word_j):
         """ 获取两个词语的共现信息
@@ -386,8 +388,8 @@ class InvertDic:
 
     @staticmethod
     def get_time_array_relative(time_array_c, time_array_d, day_delta_value):
-        time_delta = time_array_d[0]-time_array_c[-1]
-        if time_delta.days < day_delta_value:
+        time_delta = time_array_d[0] - time_array_c[-1]
+        if abs(time_delta.days) < day_delta_value:
             return True
         else:
             return False

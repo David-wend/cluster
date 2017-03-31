@@ -10,7 +10,7 @@ import Inverted_index
 from collections import Counter
 import jieba
 import jieba.analyse
-import create_news_doc
+import remove_duplicate
 
 time_format = "%Y-%m-%d %H:%M:%S"
 
@@ -256,9 +256,9 @@ def insert_comment():
                         comment_tag.add(comment_row[5])
                         comment_set.add(comment_row[0])
 
-                    # print "insert into yunshan_top_comment values(%s, %s, %s, %s, %s, %s, %s)" % (
-                    #     temp[-1][0], temp[-1][1], temp[-1][2], temp[-1][3], temp[-1][4], temp[-1][5], temp[-1][6])
-                    # print comment_rows
+                        # print "insert into yunshan_top_comment values(%s, %s, %s, %s, %s, %s, %s)" % (
+                        #     temp[-1][0], temp[-1][1], temp[-1][2], temp[-1][3], temp[-1][4], temp[-1][5], temp[-1][6])
+                        # print comment_rows
 
     sql = "insert into yunshan_top_comment values(%s, %s, %s, %s, %s, %s, %s)"
     conn, cursor = sql_tool.connect_mysql()
@@ -272,9 +272,21 @@ if __name__ == '__main__':
     # update_event_datetime()
     # insert_comment()
 
-    d = datetime.now()
-    print d
-    print type(d.day)
+    print remove_duplicate.count_similar([[w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗家庭暴力")]],
+                                         [w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗")], 4, 3)
+    #
+    # arr = np.random.randint(1, 10, 5)
+    # print arr
+    # print np.argsort(arr, axis=0)
+    # print np.sort(arr)
+    # print arr
+    # crr = [0, 1, 2, 3, 4]
+    # arr = tool.resort_array_by_index(arr, np.argsort(arr))
+    # print arr[np.argsort(arr, axis=0)]
+
+    # d = datetime.now()
+    # print d
+    # print type(d.day)
     # create_news_doc.insert_doc_from_mongodb()
     # create_news_doc.connect_mongodb()
 

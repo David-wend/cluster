@@ -28,6 +28,7 @@ class Doc:
             self.doc_string = doc_string.decode('utf8')
         else:
             self.doc_string = doc_string
+        self.doc_string = "".join(self.doc_string.split("\n"))
         if not isinstance(title, unicode):
             self.title = title.decode('utf8')
         else:

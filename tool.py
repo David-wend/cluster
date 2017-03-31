@@ -171,5 +171,14 @@ def exe_time(func):
     return wrapper
 
 
+def resort_array_by_index(array, index_array):
+    if len(array) != len(index_array):
+        return False
+    brr = np.array([""]*len(array))
+    for i in range(len(index_array)):
+        brr[index_array[i]] = array[i]
+    return brr
+
+
 stop_word = get_stop_word()
 speech_dic = get_speech_dic()

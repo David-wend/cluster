@@ -8,8 +8,10 @@ import create_news_doc
 import count
 from datetime import datetime
 
+time_format = "%Y-%m-%d %H:%M:%S"
 
-def count_similar(title_arr_list, title_arr_j, limit_info, similar_word_limit = 2):
+
+def count_similar(title_arr_list, title_arr_j, limit_info, similar_word_limit=2):
     """ 利用相同关键词与最大公共子串长度计算事件与新闻的相似度
 
     对事件新闻列表中的每个新闻news_i:
@@ -33,17 +35,17 @@ def count_similar(title_arr_list, title_arr_j, limit_info, similar_word_limit = 
     for title_arr_i in title_arr_list:
         similarity = float(0)
         similar_word_num = 0
-        for word in set(title_arr_i) & set(title_arr_j):
-
+        stop_words = ["搜狐", "新闻", "腾讯", "腾讯网", "网易", "新浪"]
+        for word in set(title_arr_i) & set(title_arr_j) - set(stop_words):
             similar_word_num += 1
             similarity += info_init.termdir.get(word, 1)
             if word in info_init.flagdir:
                 similarity += info_init.speechdir.get(info_init.flagdir[word], 1)
-        if similar_word_num > similar_word_limit:
-            news_lcs = tool.lcs("".join(title_arr_i), "".join(title_arr_j))  # 最大相同子串
-            similarity *= (1 + len(news_lcs) / max(len(title_arr_i), len(title_arr_j)))
+        # if similar_word_num > similar_word_limit:
+        #     news_lcs = tool.lcs("".join(title_arr_i), "".join(title_arr_j))  # 最大相同子串
+        #     similarity *= (1 + len(set(title_arr_i) & set(title_arr_j)) / max(len(title_arr_i), len(title_arr_j)))
         limit = limit_info + float(min(len(title_arr_i), len(title_arr_j))) / 5
-        # print similarity, limit
+
         if similarity > limit:
             # print similarity, limit
             # print "两个新闻标题为" + ".".join(title_arr_i) + "@@@@" + ".".join(title_arr_j) + " " + str(similarity)
@@ -57,31 +59,45 @@ def count_similar(title_arr_list, title_arr_j, limit_info, similar_word_limit = 
 
 
 def remove_duplicate():
+    # time_1 = datetime.now()
+
     lines = tool.get_file_lines("./dict/doc.txt")
     words = []
     filter_set = set([])
+    times = []
 
+    # for i in range(100, 200):
     for i in range(len(lines)):
         try:
             arr = lines[i].split("@@@@", 1)
-            print arr
+            # print arr
             brr = arr[1].split("##", 3)
+            times.append(datetime.strptime(brr[2], time_format))
             words.append([term.word for term in pseg.cut(brr[0])])
         except IndexError:
             words.append([])
 
+    times_index = np.argsort(times, axis=0)
+    times = np.sort(times, axis=0)
+    words = np.array(words)[times_index]
+
+    # for i in range(len(times)):
+    #     print "".join(words[i]), times[i]
+
     flags = np.ones(len(words))
-    for i in range(len(words)):
+    for i in range(len(words) - 1):
+        print i
         if flags[i]:
             flags[i] = 0
-            for j in range(len(words)):
-                if i == j:
-                    continue
+            for j in range(i + 1, len(words)):
                 if flags[j]:
-                    if count_similar([words[i]], words[j], 6.5, 3):
-                        flags[j] = 0
-                        filter_set.add(j)
-
+                    delta = times[j] - times[i]
+                    if abs(delta.days) <= 2:
+                        if count_similar([words[i]], words[j], 4, 3):
+                            flags[j] = 0
+                            filter_set.add(j)
+                    else:
+                        break
     temp = []
     result = []
     result_set = set(range(len(words))) - filter_set
@@ -94,6 +110,9 @@ def remove_duplicate():
 
     tool.write_file("./dict/filter_doc.txt", result, "w")
     tool.write_file("./dict/filter_doc_title.txt", temp, "w")
+
+    # time_2 = datetime.now()
+    # print time_1, time_2
 
 
 if __name__ == '__main__':
