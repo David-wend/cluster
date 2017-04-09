@@ -272,9 +272,9 @@ if __name__ == '__main__':
     # update_event_datetime()
     # insert_comment()
 
-    print remove_duplicate.count_similar([[w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗家庭暴力")]],
-                                         [w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗")], 4, 3)
-    #
+    # print remove_duplicate.count_similar([[w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗家庭暴力")]],
+    #                                      [w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗")], 4, 3)
+
     # arr = np.random.randint(1, 10, 5)
     # print arr
     # print np.argsort(arr, axis=0)
@@ -293,7 +293,14 @@ if __name__ == '__main__':
     # i_dic = Inverted_index.InvertDic()
     # i_dic.init_all_dic()
     # words, freq, values, doc_ids, word_index_dic = count.load_data()
-    # add_new_word(i_dic, u"人大代表")
+    # print doc_ids[u"共享单"]
+    # print doc_ids[u"共享单车"]
+    # # words, freq, values, doc_ids, word_index_dic = count.load_data()
+    # i_dic = add_new_word(i_dic, u"共享单车")
+    # print count.calculate_sim_by_cut(word_index_dic, doc_ids, [x for x in jieba.cut("共享单车")],
+    #                                  [x for x in jieba.cut("共享单")])
+    # ol = (1 + i_dic.calculate_time_overlapping_rate(u"共享单车",u"共享单"))
+    # print ol
     # print p(count.calculate_novelty(i_dic, u"人大代表"))
     # print i_dic.word_index_dic[u"美联储官员"], i_dic.word_index_dic[u"李克强回应"]
 
@@ -304,3 +311,17 @@ if __name__ == '__main__':
     # UPDATE yunshan_event AS t1 SET `event_datetime` = (select topic_datetime from yunshan_topic where  topic_id in (select topic_id from yunshan_event_topic_relative where event_id = t1.event_id) and topic_datetime != '0000-00-00 00:00:00' order by topic_datetime desc limit 1)
 
     # select a.* from news_comment_emotion_relative a,(select emotion_id,max(possibility) possibility from news_comment_emotion_relative group by emotion_id) b where a.news_comment_id = b.news_comment_id and a.possibility = b.possibility and a.news_comment_id =199 order by a.news_comment_id
+
+    topic_lines = tool.get_file_lines("./dict/topic_news_relative.txt")
+    similar_lines = tool.get_file_lines("./dict/similar_relative.txt")
+    topic_dic = {}
+    news_dic = {}
+    for line in topic_lines:
+        arr = line.split("@@")
+        topic_dic[arr[0]] = topic_dic.get(arr[0], []) + [arr[1]]
+
+    for line in similar_lines:
+        arr = line.split("@@@@")
+        news_dic[arr[0]] = news_dic.get(arr[0], []) + [arr[1]]
+
+    print news_dic["35"]

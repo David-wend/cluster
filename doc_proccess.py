@@ -133,6 +133,9 @@ class Doc:
         except TypeError:
             return str(
                 self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + self.time + "##" + self.doc_string
+        except UnicodeError:
+            return str(self.doc_id) + "@@@@" + self.title + "##" + self.news_type + "##" + datetime.strftime(
+                self.time, time_format) + "##" + self.doc_string
 
 
 if __name__ == '__main__':

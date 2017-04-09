@@ -12,9 +12,9 @@ if __name__ == '__main__':
     # remove_duplicate.remove_duplicate()
     # 根据去重后的标题，重新生成词典
     # print datetime.now()
-    create_news_doc.transform_doc()
+    # create_news_doc.transform_doc()
     # print datetime.now()
     # 挖掘频繁项集
-    count.get_co_name()
+    # count.get_co_name()
     # 根据频繁模式进行聚类
     count.lan_de_qi_ming()

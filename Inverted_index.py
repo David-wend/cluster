@@ -120,10 +120,13 @@ class InvertDic:
     def get_doc_dic(self):
         lines = tool.get_file_lines("./dict/doc.txt")
         for line in lines:
-            temp = line.split("@@@@")
-            info = temp[1].split("##", 3)
-            self.doc_dic[int(temp[0])] = doc_proccess.Doc(info[0], info[3], info[1], datetime.strptime(
-                info[2], time_format), int(temp[0]))
+            try:
+                temp = line.split("@@@@")
+                info = temp[1].split("##", 3)
+                self.doc_dic[int(temp[0])] = doc_proccess.Doc(info[0], info[3], info[1], datetime.strptime(
+                    info[2], time_format), int(temp[0]))
+            except IndexError:
+                continue
 
     def get_word_df_dic(self):
         lines = tool.get_file_lines("./dict/word_df_dic.txt")
@@ -389,7 +392,7 @@ class InvertDic:
     @staticmethod
     def get_time_array_relative(time_array_c, time_array_d, day_delta_value):
         time_delta = time_array_d[0] - time_array_c[-1]
-        if abs(time_delta.days) < day_delta_value:
+        if time_delta.days < day_delta_value:
             return True
         else:
             return False

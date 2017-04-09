@@ -20,12 +20,18 @@ def connect_mongodb():
 
 def insert_doc_from_mongodb():
     i_dic = Inverted_index.InvertDic()
-    # tool.write_file("./dict/doc.txt", [], "w")
+    tool.write_file("./dict/doc.txt", [], "w")
     conn = MongoClient('192.168.235.36', 27017)
     db = conn.sea_data
-    num = 253894
-    for i in db.news.find({'publish_time': {"$gt": "2017-01-01 00:00:00", "$lte": "2017-03-31 00:00:00"}}):
+    # num = 36938
+    num = 1
+    temp_relative = []
+    for i in db.news.find(
+            {'publish_time': {"$gt": "2017-02-01 00:00:00", "$lte": "2017-03-01 00:00:00"}}):
+        # {'publish_time': {"$gt": "2017-02-01 00:00:00", "$lte": "2017-03-01 00:00:00"},
+        #  "news_type": {"$in": ["财经", "汽车", "娱乐", "体育", "科技", "社会"]}}
         news_id = num
+        temp_relative.append(str(num) + "@@@@" + i["cmt_id"])
         num += 1
         title = i["title"]
         content = re.split(r"\r|\n|\r\n", i["content"])[0]
@@ -38,6 +44,7 @@ def insert_doc_from_mongodb():
         d = doc_proccess.Doc(title, content, news_type, time, news_id)
         i_dic.update_invert_index(d)
         print title + 'done'
+    tool.write_file("./dict/cmt_id_relative.txt", temp_relative, "w")
 
 
 def insert_doc_from_db(data):
@@ -70,9 +77,9 @@ def transform_doc():
             doc_id = int(temp[0])
             d = doc_proccess.Doc(title, content, news_type, datetime, doc_id)
             i.update_invert_index(d, flag=0)
+            print news[0] + 'done'
         except:
             print row
-            # print news[0] + 'done'
 
     i.save_word_df_dic()
     i.save_word_freq_dic()
@@ -84,11 +91,10 @@ if __name__ == '__main__':
     news_type_list = ['军事', '体育', '科技', '娱乐', '社会', '国际', '国内', '数码']
     news_type = '数码'
 
-    sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
-          " news_datetime > '2016-03-01 00:00:00' and `news_datetime` < '2016-04-01 00:00:00' and news_title like " \
-          "'%家暴%' order by 'news_datetime' asc "
-    news_rows = sql_tool.select(sql)
-    print len(news_rows)
-    insert_doc_from_db(news_rows)
-    # insert_doc_from_mongodb()
+    # sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
+    #       " news_datetime > '2016-03-01 00:00:00' and `news_datetime` < '2016-04-01 00:00:00' and news_title like " \
+    #       "'%家暴%' order by 'news_datetime' asc "
+    # news_rows = sql_tool.select(sql)
+    # insert_doc_from_db(news_rows)
+    insert_doc_from_mongodb()
     # transform_doc()

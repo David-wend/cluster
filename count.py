@@ -198,11 +198,12 @@ def get_co_name():
     i_dic.init_all_dic()
     candidate_list = i_dic.word_index_dic.keys()
     # 这里设定n阶频繁模式及其对应的支持度阈值
-    limit_dic = {1: 4, 2: 3, 3: 3, 4: 2, 5: 2}
+    limit_dic = {1: 4, 2: 4, 3: 3, 4: 3, 5: 3}
     ids_dic = {}
     tool.write_file("./dict/word_co.txt", [], "w")
     # 设置最多计算到第K阶的频繁模式
     for k in range(10):
+        print k
         result_dic = {}
         for i in range(len(candidate_list)):
             for j in range(len(candidate_list)):
@@ -310,9 +311,9 @@ def remove_non_sense_word(words, freq, values):
     # candidate_remove = {}
     for w_i in words:
         if freq[w_i] > 2:
-            if values[w_i][0] > 0.7 and values[w_i][1] > 0.55 and values[w_i][2] > 0.7:
+            if values[w_i][0] > 0.7 and values[w_i][1] > 0.6 and values[w_i][2] > 0.7:
                 result[w_i] = calculate_total_weight(freq[w_i], values[w_i])
-            elif len(w_i) > 3 and freq[w_i] > 12 and values[w_i][0] > 0.45 and values[w_i][1] > 0.45 and values[w_i][
+            elif len(w_i) > 3 and freq[w_i] > 12 and values[w_i][0] > 0.45 and values[w_i][1] > 0.55 and values[w_i][
                 2] > 0.7:
                 result[w_i] = calculate_total_weight(freq[w_i], values[w_i])
 
@@ -443,7 +444,7 @@ def lan_de_qi_ming():
                 if feature_tag[j] == 0:
                     # 考虑时间相似度
                     if i_dic.cluster_time_bound("".join(word_cut_array[j]), ["".join(x) for x in fc.feature_cut_array],
-                                                10):
+                                                7):
                         num = 0
                         for word_cut_array_k in fc.feature_cut_array:
                             similar = calculate_sim_by_cut(word_index_dic, doc_ids,
@@ -455,11 +456,11 @@ def lan_de_qi_ming():
                             # if u"政协" in "".join(word_cut_array_k):
                             #     print "".join(word_cut_array_k), "".join(word_cut_array[j]), hs,  ol
                             similar *= ol
-                            if similar > 1.7:
+                            if similar > 1.6:
                                 feature_tag[j] = 1
                                 fc.append_new_feature_cut(word_cut_array[j])
                                 break
-                            if similar > 0.85:
+                            if similar > 0.80:
                                 num += 1
                                 if float(num) / len(fc.feature_cut_array) > 0.75:
                                     fc.append_new_feature_cut(word_cut_array[j])
@@ -507,7 +508,7 @@ def lan_de_qi_ming():
                     if i == j:
                         continue
                     if tag[j] == 0:
-                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.7,
+                        if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.8,
                                                           similar_word_limit=1):
                             doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
                                                     "".join(fc.feature_cut_array[j]))
@@ -557,16 +558,16 @@ def lan_de_qi_ming():
         # print item[0], item[1]
         for doc_id in item[1]:
             # print "\t" + doc_dic[doc_id]
-            temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id))
+            temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id) + "@@" + item[0])
     tool.write_file("./dict/topic_news_relative.txt", temp, "w")
 
     # 保存文档与事件的联系
     temp = []
-    num = 2
-    for fc in feature_array[:3]:
+    num = 0
+    for fc in feature_array:
         for feature_cut_array_k in fc.feature_cut_array:
             word_name = "".join(feature_cut_array_k)
-            temp.append(str(num) + "@@" + str(word_index_dic[word_name]))
+            temp.append(str(num) + "@@" + str(word_index_dic[word_name]) + "@@" + word_name)
         num += 1
     tool.write_file("./dict/event_topic_relative.txt", temp, "w")
 
@@ -578,6 +579,7 @@ def lan_de_qi_ming():
             print fc, calculate_hot(doc_ids, fc)
 
     print len(feature_array)
+
 
 if __name__ == '__main__':
     lan_de_qi_ming()
