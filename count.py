@@ -482,14 +482,16 @@ def lan_de_qi_ming():
             new_feature_cut_array.append(words_fca_dict[word])
             if word[:-1] in result:
                 if values[word][0] > 0.8:
-                    new_feature_cut_array.remove(words_fca_dict[word[:-1]])
-                    doc_ids = update_doc_id(doc_ids, word, word[:-1])
-                    del result[word[:-1]]
+                    pass
+                    # new_feature_cut_array.remove(words_fca_dict[word[:-1]])
+                    # doc_ids = update_doc_id(doc_ids, word, word[:-1])
+                    # del result[word[:-1]]
             if word[1:] in result:
                 if values[word][0] > 0.8:
-                    new_feature_cut_array.remove(words_fca_dict[word[1:]])
-                    doc_ids = update_doc_id(doc_ids, word, word[1:])
-                    del result[word[1:]]
+                    pass
+                    # new_feature_cut_array.remove(words_fca_dict[word[1:]])
+                    # doc_ids = update_doc_id(doc_ids, word, word[1:])
+                    # del result[word[1:]]
         # fc.feature_cut_array = new_feature_cut_array
         # print fc
 
@@ -509,8 +511,8 @@ def lan_de_qi_ming():
                     if tag[j] == 0:
                         if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.8,
                                                           similar_word_limit=1):
-                            doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
-                                                    "".join(fc.feature_cut_array[j]))
+                            # doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
+                            #                         "".join(fc.feature_cut_array[j]))
                             tag[j] = 1
 
         # fc.feature_cut_array = new_feature_cut_array

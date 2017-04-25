@@ -268,8 +268,14 @@ def insert_comment():
     sql_tool.save_many_into_mysql(conn, cursor, sql, temp)
 
 
-if __name__ == '__main__':
+def pp(a):
+    for i in a:
+        for j in i.items():
+            if j[0] == 2:
+                i[j[0]] += 1
 
+
+if __name__ == '__main__':
     # 1 社会 2 国际 3 财经 4 体育 5 娱乐 6 汽车 7 科技 8 军事 9 综合 10 其他
 
     # import numpy as np
@@ -288,9 +294,11 @@ if __name__ == '__main__':
     # plt.title("Line plot")  # 图标题
     # plt.show()  # 显示图
 
-    time = datetime.strptime("2016-12-30 21:55:00", "%Y-%m-%d %H:%M:%S")
-    time_source = "2016\xe5\xb9\xb412\xe6\x9c\x8801\xe6\x97\xa5 00:53"
-    # time_source = "2016-12-01 00:53"
-    time_str = "-".join(re.split(ur"年|月", time_source.replace(u"日", " ")))
-    time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-    print time
+    # time = datetime.strptime("2016-12-30 21:55:00", "%Y-%m-%d %H:%M:%S")
+    # time_source = "2016\xe5\xb9\xb412\xe6\x9c\x8801\xe6\x97\xa5 00:53"
+    # # time_source = "2016-12-01 00:53"
+    # time_str = "-".join(re.split(ur"年|月", time_source.replace(u"日", " ")))
+    # time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    # print time
+
+    a = [{1: 1, 2: 2}, {2: 2, 3: 3}]
