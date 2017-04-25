@@ -48,7 +48,7 @@ def save_lasted_id(lasted_id):
     for term in term_list[1:]:
         line = line + "@@@@" + term[0] + "##" + str(term[1])
     parameter_list.append(line)
-    write_file_append("./data/parameter/lasted_id_parameter.txt", parameter_list)
+    write_file_append("./dict/lasted_id_parameter.txt", parameter_list)
 
 
 def load_lasted_id():
@@ -57,7 +57,7 @@ def load_lasted_id():
     :return:
     """
     lasted_id = {}
-    line = get_file_lines("./data/parameter/lasted_id_parameter.txt")
+    line = get_file_lines("./dict/lasted_id_parameter.txt")
     if len(line) == 0:
         lasted_id["word_id"] = 0
         lasted_id["news_id"] = 0

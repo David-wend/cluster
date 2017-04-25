@@ -91,6 +91,12 @@ class InvertDic:
         self.get_word_index_dic()
         self.get_word_term_dic()
 
+    def save_all_dic(self):
+        self.save_word_df_dic()
+        self.save_word_freq_dic()
+        self.save_word_index_dic()
+        self.save_word_term_dic()
+
     def save_word_df_dic(self):
         lines = []
         for it in self.word_df_dic.items():
@@ -165,7 +171,6 @@ class InvertDic:
         lines = tool.get_file_lines("./dict/weight.txt")
         for line in lines:
             temp = line.split("\t")
-
             self.word_hot_weight_dic[temp[0].decode("utf-8")] = float(temp[-1])
 
     def update_df_dic(self, words):
@@ -177,7 +182,7 @@ class InvertDic:
         for word in set(words):
             self.word_df_dic[self.word_index_dic[word]] = self.word_df_dic.get(self.word_index_dic[word], 0) + 1
 
-    def update_invert_index(self, doc, flag=1):
+    def update_invert_index(self, doc, flag=0):
         """ 更新倒排索引词典，可以将新的文章添加到倒排索引词典内
 
         :param doc: Doc类

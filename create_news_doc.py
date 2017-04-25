@@ -7,49 +7,60 @@ import sql_tool
 from pymongo import MongoClient
 from datetime import datetime
 import re
+import sl_tool
+import remove_duplicate
+import count
 
 
-def connect_mongodb():
+
+def connect_mongodb(sql):
     tool.write_file("./dict/doc.txt", [], "w")
     conn = MongoClient('192.168.235.36', 27017)
     db = conn.sea_data
     num = 0
-    for i in db.news.find({'publish_time': {"$gt": "2017-03-01 00:00:00", "$lte": "2017-03-31 00:00:00"}}):
+    # sql ={'publish_time': {"$gt": "2017-03-01 00:00:00", "$lte": "2017-03-31 00:00:00"}}
+    for i in db.news.find(sql):
         print i
 
 
-def insert_doc_from_mongodb():
-    i_dic = Inverted_index.InvertDic()
+def insert_doc_from_mongodb(sql):
     tool.write_file("./dict/doc.txt", [], "w")
     conn = MongoClient('192.168.235.36', 27017)
     db = conn.sea_data
-    # num = 36938
-    num = 1
+    lasted_id = sl_tool.load_lasted_id()
+    num = lasted_id["news_id"]
     temp_relative = []
-    for i in db.news.find(
-            {'publish_time': {"$gt": "2017-02-01 00:00:00", "$lte": "2017-03-01 00:00:00"}}):
-        # {'publish_time': {"$gt": "2017-02-01 00:00:00", "$lte": "2017-03-01 00:00:00"},
-        #  "news_type": {"$in": ["财经", "汽车", "娱乐", "体育", "科技", "社会"]}}
+    doc_str = []
+    for i in db.news.find(sql):
         news_id = num
         temp_relative.append(str(num) + "@@@@" + i["cmt_id"])
         num += 1
         title = i["title"]
         content = re.split(r"\r|\n|\r\n", i["content"])[0]
-        # content = i["content"].split("\n")[0]
+        time_str = "-".join(re.split(ur"年|月", i["publish_time"].replace(u"日", " ")))
         try:
-            time = datetime.strptime(i["publish_time"], "%Y-%m-%d %H:%M:%S")
+            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
         except:
-            time = datetime.strptime(i["publish_time"], "%Y-%m-%d %H:%M")
+            try:
+                time = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+            except:
+                print time_str
+                continue
         news_type = i["news_type"]
         d = doc_proccess.Doc(title, content, news_type, time, news_id)
-        i_dic.update_invert_index(d)
-        print title + 'done'
+        doc_str.append(d.__str__())
+        print d.__str__()
+        # print title + 'done'
+    tool.write_file("./dict/doc.txt", doc_str, "w")
     tool.write_file("./dict/cmt_id_relative.txt", temp_relative, "w")
+    lasted_id["news_id"] = num
+    sl_tool.save_lasted_id(lasted_id)
 
 
-def insert_doc_from_db(data):
-    i = Inverted_index.InvertDic()
+def insert_doc_from_db(sql):
+    data = sql_tool.select(sql)
     tool.write_file("./dict/doc.txt", [], "w")
+    doc_str = []
     for row in data:
         news_id = row[0]
         title = row[1]
@@ -58,8 +69,9 @@ def insert_doc_from_db(data):
         datetime = row[3]
         news_type = row[4]
         d = doc_proccess.Doc(title, content, news_type, datetime, news_id)
-        i.update_invert_index(d)
+        doc_str.append(d.__str__())
         print title + 'done'
+    tool.write_file("./dict/doc.txt", doc_str, "a")
 
 
 def transform_doc():
@@ -80,21 +92,19 @@ def transform_doc():
             print news[0] + 'done'
         except:
             print row
-
-    i.save_word_df_dic()
-    i.save_word_freq_dic()
-    i.save_word_index_dic()
-    i.save_word_term_dic()
+    i.save_all_dic()
 
 
 if __name__ == '__main__':
     news_type_list = ['军事', '体育', '科技', '娱乐', '社会', '国际', '国内', '数码']
     news_type = '数码'
-
     # sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
-    #       " news_datetime > '2016-03-01 00:00:00' and `news_datetime` < '2016-04-01 00:00:00' and news_title like " \
-    #       "'%家暴%' order by 'news_datetime' asc "
-    # news_rows = sql_tool.select(sql)
-    # insert_doc_from_db(news_rows)
-    insert_doc_from_mongodb()
-    # transform_doc()
+    #       " news_datetime > '2016-12-01 00:00:00' and `news_datetime` < '2016-12-31 00:00:00' " \
+    #       "order by 'news_datetime' asc "
+    # insert_doc_from_db(sql)
+    sql = {'publish_time': {"$gt": "2016-12-01 00:00:00", "$lte": "2017-01-01 00:00:00"}}
+    insert_doc_from_mongodb(sql)
+    remove_duplicate.remove_duplicate()
+    transform_doc()
+    count.get_co_name()
+    count.lan_de_qi_ming()

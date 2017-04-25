@@ -245,7 +245,6 @@ def get_co_name():
             #     print temp[0]
             #     continue
         tool.write_file("./dict/word_co.txt", lines, "a")
-
         candidate_list = result_dic.keys()
 
 
@@ -491,7 +490,7 @@ def lan_de_qi_ming():
                     new_feature_cut_array.remove(words_fca_dict[word[1:]])
                     doc_ids = update_doc_id(doc_ids, word, word[1:])
                     del result[word[1:]]
-        fc.feature_cut_array = new_feature_cut_array
+        # fc.feature_cut_array = new_feature_cut_array
         # print fc
 
         # 根据语义去重
@@ -514,7 +513,7 @@ def lan_de_qi_ming():
                                                     "".join(fc.feature_cut_array[j]))
                             tag[j] = 1
 
-        fc.feature_cut_array = new_feature_cut_array
+        # fc.feature_cut_array = new_feature_cut_array
         # print fc
 
     # 将特征文档空间模型转换为文档特征空间模型
@@ -561,7 +560,7 @@ def lan_de_qi_ming():
             temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id) + "@@" + item[0])
     tool.write_file("./dict/topic_news_relative.txt", temp, "w")
 
-    # 保存文档与事件的联系
+    # 保存话题与事件的联系
     temp = []
     num = 0
     for fc in feature_array:

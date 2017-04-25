@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import csv
 import sql_tool
 from datetime import datetime
 import count
@@ -11,6 +12,8 @@ from collections import Counter
 import jieba
 import jieba.analyse
 import remove_duplicate
+from pymongo import MongoClient
+import re
 
 time_format = "%Y-%m-%d %H:%M:%S"
 
@@ -266,62 +269,28 @@ def insert_comment():
 
 
 if __name__ == '__main__':
-    # insert_news()
-    # insert_key_word()
-    # update_topic_datetime()
-    # update_event_datetime()
-    # insert_comment()
 
-    # print remove_duplicate.count_similar([[w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗家庭暴力")]],
-    #                                      [w for w in jieba.cut("丈夫家暴砍断妻子手指 丈母娘遭殴打入院治疗")], 4, 3)
+    # 1 社会 2 国际 3 财经 4 体育 5 娱乐 6 汽车 7 科技 8 军事 9 综合 10 其他
 
-    # arr = np.random.randint(1, 10, 5)
-    # print arr
-    # print np.argsort(arr, axis=0)
-    # print np.sort(arr)
-    # print arr
-    # crr = [0, 1, 2, 3, 4]
-    # arr = tool.resort_array_by_index(arr, np.argsort(arr))
-    # print arr[np.argsort(arr, axis=0)]
+    # import numpy as np
+    # import matplotlib.pyplot as plt
+    #
+    # # X轴，Y轴数据
+    # x = [0, 1, 2, 3, 4, 5, 6]
+    # y = [0.3, 0.4, 2, 5, 3, 4.5, 4]
+    # a = [0, 1, 2, 3, 4, 5, 6]
+    # b = [0.3, 0.4, 2, 5, 3, 4.5, 4]
+    # plt.figure(figsize=(8, 4))  # 创建绘图对象
+    # plt.plot(x, y, "b", linewidth=1)  # 在当前绘图对象绘图（X轴，Y轴，蓝色虚线，线宽度）
+    # plt.plot(b, a, "g--", linewidth=1)  # 在当前绘图对象绘图（X轴，Y轴，蓝色虚线，线宽度）
+    # plt.xlabel("Time(s)")  # X轴标签
+    # plt.ylabel("Volt")  # Y轴标签
+    # plt.title("Line plot")  # 图标题
+    # plt.show()  # 显示图
 
-    # d = datetime.now()
-    # print d
-    # print type(d.day)
-    # create_news_doc.insert_doc_from_mongodb()
-    # create_news_doc.connect_mongodb()
-
-    # i_dic = Inverted_index.InvertDic()
-    # i_dic.init_all_dic()
-    # words, freq, values, doc_ids, word_index_dic = count.load_data()
-    # print doc_ids[u"共享单"]
-    # print doc_ids[u"共享单车"]
-    # # words, freq, values, doc_ids, word_index_dic = count.load_data()
-    # i_dic = add_new_word(i_dic, u"共享单车")
-    # print count.calculate_sim_by_cut(word_index_dic, doc_ids, [x for x in jieba.cut("共享单车")],
-    #                                  [x for x in jieba.cut("共享单")])
-    # ol = (1 + i_dic.calculate_time_overlapping_rate(u"共享单车",u"共享单"))
-    # print ol
-    # print p(count.calculate_novelty(i_dic, u"人大代表"))
-    # print i_dic.word_index_dic[u"美联储官员"], i_dic.word_index_dic[u"李克强回应"]
-
-    # select news_datetime from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_datetime != "0000-00-00 00:00:00" order by news_datetime asc limit 1
-    # select topic_datetime from yunshan_topic where topic_id in (select topic_id from yunshan_event_topic_relative where event_id = 2) and topic_datetime != "0000-00-00 00:00:00" order by topic_datetime asc limit 1
-    # select news_image_url from yunshan_news where news_id in (select news_id from yunshan_topic_news_relative where topic_id = 152) and news_image_url is not null order by news_datetime asc limit 1
-    # UPDATE yunshan_topic AS t1 SET `topic_datetime` = (select news_datetime from yunshan_news where  news_id in (select news_id from yunshan_topic_news_relative where topic_id = t1.topic_id) and news_datetime != '0000-00-00 00:00:00' order by news_datetime desc limit 1)
-    # UPDATE yunshan_event AS t1 SET `event_datetime` = (select topic_datetime from yunshan_topic where  topic_id in (select topic_id from yunshan_event_topic_relative where event_id = t1.event_id) and topic_datetime != '0000-00-00 00:00:00' order by topic_datetime desc limit 1)
-
-    # select a.* from news_comment_emotion_relative a,(select emotion_id,max(possibility) possibility from news_comment_emotion_relative group by emotion_id) b where a.news_comment_id = b.news_comment_id and a.possibility = b.possibility and a.news_comment_id =199 order by a.news_comment_id
-
-    topic_lines = tool.get_file_lines("./dict/topic_news_relative.txt")
-    similar_lines = tool.get_file_lines("./dict/similar_relative.txt")
-    topic_dic = {}
-    news_dic = {}
-    for line in topic_lines:
-        arr = line.split("@@")
-        topic_dic[arr[0]] = topic_dic.get(arr[0], []) + [arr[1]]
-
-    for line in similar_lines:
-        arr = line.split("@@@@")
-        news_dic[arr[0]] = news_dic.get(arr[0], []) + [arr[1]]
-
-    print news_dic["35"]
+    time = datetime.strptime("2016-12-30 21:55:00", "%Y-%m-%d %H:%M:%S")
+    time_source = "2016\xe5\xb9\xb412\xe6\x9c\x8801\xe6\x97\xa5 00:53"
+    # time_source = "2016-12-01 00:53"
+    time_str = "-".join(re.split(ur"年|月", time_source.replace(u"日", " ")))
+    time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    print time
