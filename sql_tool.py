@@ -18,6 +18,20 @@ def connect_mysql():
     return conn, cursor
 
 
+def execute(sql):
+    conn, cursor = connect_mysql()
+    try:
+        # 执行SQL语句
+        cursor.execute(sql)
+        # 提交到数据库执行
+        conn.commit()
+    except:
+        # 发生错误时回滚
+        conn.rollback()
+    # 关闭数据库连接
+    conn.close()
+
+
 def select(sql, t=None):
     """返回数据表
 

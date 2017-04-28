@@ -51,7 +51,7 @@ def count_similar(title_arr_list, title_arr_j, limit_info, similar_word_limit=2)
 
         if similarity > limit:
             # print similarity, limit
-            # print "两个新闻标题为" + ".".join(title_arr_i) + "@@@@" + ".".join(title_arr_j) + " " + str(similarity)
+            print "两个新闻标题为" + ".".join(title_arr_i) + "@@@@" + ".".join(title_arr_j) + " " + str(similarity)
             # print title_arr_i, title_arr_j
             similar_news_num += 1
 

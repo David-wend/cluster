@@ -12,7 +12,6 @@ import remove_duplicate
 import count
 
 
-
 def connect_mongodb(sql):
     tool.write_file("./dict/doc.txt", [], "w")
     conn = MongoClient('192.168.235.36', 27017)
@@ -96,13 +95,14 @@ def transform_doc():
 
 
 if __name__ == '__main__':
-    news_type_list = ['军事', '体育', '科技', '娱乐', '社会', '国际', '国内', '数码']
-    news_type = '数码'
+    # news_type_list = ['军事', '体育', '科技', '娱乐', '社会', '国际', '国内', '数码']
+    # news_type = '数码'
     # sql = "SELECT `news_id` , `news_title` , `news_content` , `news_datetime` , `news_website_type` FROM `news` where" \
     #       " news_datetime > '2016-12-01 00:00:00' and `news_datetime` < '2016-12-31 00:00:00' " \
     #       "order by 'news_datetime' asc "
     # insert_doc_from_db(sql)
-    sql = {'publish_time': {"$gt": "2016-12-01 00:00:00", "$lte": "2017-01-01 00:00:00"}}
+    # sql = {'publish_time': {"$gt": "2017-04-15 00:00:01", "$lte": "2017-04-31 00:00:00"}}
+    sql = {"title": {'$regex': '.美联航.'}}
     insert_doc_from_mongodb(sql)
     remove_duplicate.remove_duplicate()
     transform_doc()

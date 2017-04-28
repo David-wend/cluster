@@ -180,5 +180,8 @@ def resort_array_by_index(array, index_array):
     return brr
 
 
+def clear_info():
+    write_file("./lasted_id_parameter.txt",[],"w")
+
 stop_word = get_stop_word()
 speech_dic = get_speech_dic()

@@ -2,6 +2,7 @@
 import sys
 import os
 import shutil
+import tool
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -37,7 +38,7 @@ def save_exist_news_id(exist_news_id):
 
 
 def save_lasted_id(lasted_id):
-    """ 获取最新的词/新闻/事件/主题编号
+    """ 保存最新的词/新闻/事件/主题编号
 
     :param lasted_id:
     :return:
@@ -48,21 +49,34 @@ def save_lasted_id(lasted_id):
     for term in term_list[1:]:
         line = line + "@@@@" + term[0] + "##" + str(term[1])
     parameter_list.append(line)
-    write_file_append("./dict/lasted_id_parameter.txt", parameter_list)
+    write_file_append("./lasted_id_parameter.txt", parameter_list)
+
+
+def load_event_id():
+    line = get_file_lines("./lasted_event_id.txt")
+    if len(line) == 0:
+        event_id = 10
+    else:
+        event_id = int(line[-1])
+    return event_id
+
+
+def save_event_id(event_id):
+    tool.write_file("./lasted_event_id.txt", [str(event_id)], "a")
 
 
 def load_lasted_id():
-    """ 保存最新的词/新闻/事件/主题编号
+    """ 获取最新的词/新闻/事件/主题编号
 
     :return:
     """
     lasted_id = {}
-    line = get_file_lines("./dict/lasted_id_parameter.txt")
+    line = get_file_lines("./lasted_id_parameter.txt")
     if len(line) == 0:
-        lasted_id["word_id"] = 0
+        lasted_id["word_id"] = 966
         lasted_id["news_id"] = 0
-        lasted_id["event_id"] = 0
-        lasted_id["topic_id"] = 0
+        lasted_id["event_id"] = 5
+        lasted_id["topic_id"] = 268
     else:
         parameter_rows = line[-1].split('@@@@')
         for parameter_row in parameter_rows:
@@ -323,7 +337,7 @@ def copy_dir(source_path, target_path):
 
 
 def get_stop_word():
-    stop_word=set([])
+    stop_word = set([])
     for line in get_file_lines('./data/dictionary/emotion.txt'):
         stop_word.add(line.decode("utf-8"))
     return stop_word

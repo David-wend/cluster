@@ -10,6 +10,7 @@ import remove_duplicate
 import math
 from collections import Counter
 from datetime import datetime
+import sl_tool
 
 __author__ = 'david'
 
@@ -24,6 +25,7 @@ class FeatureCluster:
 
     def __str__(self):
         return "@@".join(["".join(y) for y in self.feature_cut_array])
+        # return "@@".join(["##".join(y) for y in self.feature_cut_array])
 
 
 def update_doc_id(doc_id_dic, new_word, old_word):
@@ -85,7 +87,11 @@ def calculate_hot(doc_id_dic, freq_mode):
     hot_value = 0
     for feature_cut_array_k in freq_mode.feature_cut_array:
         word = "".join(feature_cut_array_k)
+        # try:
+        # hot_value += len(doc_id_dic[word]) ** 2
         hot_value += len(doc_id_dic[word]) ** 2
+        # except KeyError:
+        #     hot_value += 1
     return np.sqrt(hot_value)
 
 
@@ -279,18 +285,22 @@ def load_data():
     values = {}
     doc_ids = {}
     freq = {}
-    num = 0
+    id_dic = sl_tool.load_lasted_id()
+    num = id_dic["topic_id"]
     for line in lines:
         arr = line.split("@@")
         word = arr[0].decode("utf8")
-        words.append(word)
-        word_index_dic[word] = num
-        num += 1
-        freq[word] = int(arr[1])
-        crr = arr[4].split("##")
-        brr = arr[5].split("##")
-        values[word] = [float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1]), float(crr[0]), float(crr[1])]
-        doc_ids[word] = [int(x) for x in arr[7].split("##")]
+        if word not in [u"腾讯 ", u"新浪", u"搜狐", u"新闻", u"网易", u"凤凰"]:
+            words.append(word)
+            word_index_dic[word] = num
+            num += 1
+            freq[word] = int(arr[1])
+            crr = arr[4].split("##")
+            brr = arr[5].split("##")
+            values[word] = [float(arr[2]), float(arr[3]), float(brr[0]), float(brr[1]), float(crr[0]), float(crr[1])]
+            doc_ids[word] = [int(x) for x in arr[7].split("##")]
+    id_dic["topic_id"] = num
+    sl_tool.save_lasted_id(id_dic)
     return words, freq, values, doc_ids, word_index_dic
 
 
@@ -483,16 +493,16 @@ def lan_de_qi_ming():
             if word[:-1] in result:
                 if values[word][0] > 0.8:
                     pass
-                    # new_feature_cut_array.remove(words_fca_dict[word[:-1]])
-                    # doc_ids = update_doc_id(doc_ids, word, word[:-1])
-                    # del result[word[:-1]]
+                    new_feature_cut_array.remove(words_fca_dict[word[:-1]])
+                    doc_ids = update_doc_id(doc_ids, word, word[:-1])
+                    del result[word[:-1]]
             if word[1:] in result:
                 if values[word][0] > 0.8:
                     pass
-                    # new_feature_cut_array.remove(words_fca_dict[word[1:]])
-                    # doc_ids = update_doc_id(doc_ids, word, word[1:])
-                    # del result[word[1:]]
-        # fc.feature_cut_array = new_feature_cut_array
+                    new_feature_cut_array.remove(words_fca_dict[word[1:]])
+                    doc_ids = update_doc_id(doc_ids, word, word[1:])
+                    del result[word[1:]]
+        fc.feature_cut_array = new_feature_cut_array
         # print fc
 
         # 根据语义去重
@@ -511,11 +521,11 @@ def lan_de_qi_ming():
                     if tag[j] == 0:
                         if remove_duplicate.count_similar([fc.feature_cut_array[i]], fc.feature_cut_array[j], 0.8,
                                                           similar_word_limit=1):
-                            # doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
-                            #                         "".join(fc.feature_cut_array[j]))
+                            doc_ids = update_doc_id(doc_ids, "".join(fc.feature_cut_array[i]),
+                                                    "".join(fc.feature_cut_array[j]))
                             tag[j] = 1
 
-        # fc.feature_cut_array = new_feature_cut_array
+        fc.feature_cut_array = new_feature_cut_array
         # print fc
 
     # 将特征文档空间模型转换为文档特征空间模型
@@ -539,6 +549,7 @@ def lan_de_qi_ming():
     news_relative = {}
     for i in entropy_list:
         news_relative[i[0]] = doc_ids[i[0]]
+        # 以下部分将划分变为硬划分
         for doc_id in doc_ids[i[0]]:
             for word_name in doc_word_dic[doc_id]:
                 if word_name != i[0]:
@@ -553,25 +564,6 @@ def lan_de_qi_ming():
         brr = arr[1].split("##")
         doc_dic[int(arr[0])] = brr[0]
 
-    # 输出频繁模式及相关文档
-    temp = []
-    for item in news_relative.items():
-        # print item[0], item[1]
-        for doc_id in item[1]:
-            # print "\t" + doc_dic[doc_id]
-            temp.append(str(word_index_dic[item[0]]) + "@@" + str(doc_id) + "@@" + item[0])
-    tool.write_file("./dict/topic_news_relative.txt", temp, "w")
-
-    # 保存话题与事件的联系
-    temp = []
-    num = 0
-    for fc in feature_array:
-        for feature_cut_array_k in fc.feature_cut_array:
-            word_name = "".join(feature_cut_array_k)
-            temp.append(str(num) + "@@" + str(word_index_dic[word_name]) + "@@" + word_name)
-        num += 1
-    tool.write_file("./dict/event_topic_relative.txt", temp, "w")
-
     print "输出结果如下"
     # 根据频繁模式热度重新排序并输出
     result = sorted(feature_array, key=lambda x: calculate_hot(doc_ids, x), reverse=True)
@@ -579,8 +571,41 @@ def lan_de_qi_ming():
         if len(fc.feature_cut_array) > 0:
             print fc, calculate_hot(doc_ids, fc)
 
+    # 输出频繁模式及相关文档
+    temp = []
+    topic_name = []
+    for fc_mode in result[:1]:
+        for fc in fc_mode.feature_cut_array:
+            word = "".join(fc)
+            ids = news_relative[word]
+            # for item in news_relative.items():
+            # print item[0], item[1]
+            topic_name.append(str(word_index_dic[word]) + "@@" + word)
+            for doc_id in ids:
+                # print "\t" + doc_dic[doc_id]
+                temp.append(str(word_index_dic[word]) + "@@" + str(doc_id) + "@@" + word)
+    tool.write_file("./dict/topic_name.txt", topic_name, "w")
+    tool.write_file("./dict/topic_news_relative.txt", temp, "w")
+
+    # 保存话题与事件的联系
+    temp = []
+    id_dic = sl_tool.load_lasted_id()
+    num = id_dic["event_id"]
+    event_name = []
+    for fc in result[:1]:
+        event_name.append(str(num) + "@@" + "".join(fc.feature_cut_array[0]))
+        for feature_cut_array_k in fc.feature_cut_array:
+            word_name = "".join(feature_cut_array_k)
+            temp.append(str(num) + "@@" + str(word_index_dic[word_name]) + "@@" + word_name)
+        num += 1
+    id_dic["event_id"] = num
+    sl_tool.save_lasted_id(id_dic)
+    tool.write_file("./dict/event_topic_relative.txt", temp, "w")
+    tool.write_file("./dict/event_name.txt", event_name, "w")
+
     print len(feature_array)
 
 
 if __name__ == '__main__':
+    # tool.clear_info()
     lan_de_qi_ming()
